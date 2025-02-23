@@ -5,11 +5,10 @@ from typing import Generator, Protocol
 
 class Database(Protocol):
     @contextmanager
-    def get_connection(self) -> Generator[sqlite3.Connection, None, None]:
-        ...
+    def get_connection(self) -> Generator[sqlite3.Connection, None, None]: ...
 
-    def init_db(self) -> None:
-        ...
+    def init_db(self) -> None: ...
+
 
 class SQLiteDatabase:
     def __init__(self, db_path: str):

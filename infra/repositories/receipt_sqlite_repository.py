@@ -1,11 +1,11 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import List
 from uuid import UUID, uuid4
 
 from core.models.errors import (
+    InsufficientPaymentError,
     ReceiptNotFoundError,
     ReceiptStatusError,
-    InsufficientPaymentError,
 )
 from core.models.receipt import (
     Payment,
@@ -56,8 +56,9 @@ class SQLiteReceiptRepository(ReceiptRepository):
                 raise ReceiptNotFoundError(str(receipt_id))
 
             # Fetch receipt items
-            cursor.execute("SELECT * FROM receipt_items WHERE receipt_id = ?",
-                           (receipt_id,))
+            cursor.execute(
+                "SELECT * FROM receipt_items WHERE receipt_id = ?", (receipt_id,)
+            )
             items = [
                 ReceiptItem(
                     product_id=row["product_id"],
@@ -134,7 +135,11 @@ class SQLiteReceiptRepository(ReceiptRepository):
         with self.database.get_connection() as conn:
             conn.execute(
                 """
-                INSERT INTO payments (receipt_id, amount, currency, exchange_rate, timestamp)
+                INSERT INTO payments (receipt_id, 
+                amount,
+                 currency,
+                 exchange_rate,
+                  timestamp)
                 VALUES (?, ?, ?, ?, ?)
                 """,
                 (

@@ -1,15 +1,12 @@
-from http import HTTPStatus
-
 from fastapi import HTTPException, status
 
 
 # Base POS Exception
 class POSException(HTTPException):
-    def __init__(self, status_code: int, detail: str,
-                 error_code: str) -> None:
+    def __init__(self, status_code: int, detail: str, error_code: str) -> None:
         super().__init__(
             status_code=status_code,
-            detail={"error_code": error_code, "message": detail}
+            detail={"error_code": error_code, "message": detail},
         )
 
 
@@ -19,7 +16,7 @@ class ReceiptNotFoundError(POSException):
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Receipt with ID '{receipt_id}' not found.",
-            error_code="RECEIPT_NOT_FOUND"
+            error_code="RECEIPT_NOT_FOUND",
         )
 
 
@@ -28,7 +25,7 @@ class ReceiptStatusError(POSException):
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot {action} receipt in '{receipt_status}' status.",
-            error_code="INVALID_RECEIPT_STATUS"
+            error_code="INVALID_RECEIPT_STATUS",
         )
 
 
@@ -37,7 +34,7 @@ class InsufficientPaymentError(POSException):
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Payment amount is insufficient.",
-            error_code="INSUFFICIENT_PAYMENT"
+            error_code="INSUFFICIENT_PAYMENT",
         )
 
 
@@ -47,7 +44,7 @@ class ProductNotFoundError(POSException):
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Product with ID '{product_id}' not found.",
-            error_code="PRODUCT_NOT_FOUND"
+            error_code="PRODUCT_NOT_FOUND",
         )
 
 
@@ -57,30 +54,33 @@ class ExchangeRateNotFoundError(POSException):
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Exchange rate from '{from_currency}'"
-                   f" to '{to_currency}' not found.",
-            error_code="EXCHANGE_RATE_NOT_FOUND"
+            f" to '{to_currency}' not found.",
+            error_code="EXCHANGE_RATE_NOT_FOUND",
         )
+
 
 class CampaignNotFoundError(POSException):
     def __init__(self, campaign_id: str):
         super().__init__(
-            message=f"Campaign with id {campaign_id} not found",
-            status_code=HTTPStatus.NOT_FOUND,
-            error_code="CAMPAIGN_NOT_FOUND"
+            detail=f"Campaign with id {campaign_id} not found",
+            status_code=status.HTTP_404_NOT_FOUND,
+            error_code="CAMPAIGN_NOT_FOUND",
         )
+
 
 class CampaignValidationError(POSException):
     def __init__(self, message: str):
         super().__init__(
-            message=message,
-            status_code=HTTPStatus.BAD_REQUEST,
-            error_code="CAMPAIGN_VALIDATION_ERROR"
+            detail=message,
+            status_code=status.HTTP_400_BAD_REQUEST,
+            error_code="CAMPAIGN_VALIDATION_ERROR",
         )
+
 
 class CampaignDatabaseError(POSException):
     def __init__(self, message: str):
         super().__init__(
-            message=message,
-            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
-            error_code="CAMPAIGN_DATABASE_ERROR"
+            detail=message,
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            error_code="CAMPAIGN_DATABASE_ERROR",
         )

@@ -1,14 +1,17 @@
-from uuid import UUID
+from dataclasses import dataclass
 from datetime import datetime
 from enum import Enum
-from pydantic import BaseModel, Field, validator
-from dataclasses import dataclass
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
+from uuid import UUID
+
+from pydantic import BaseModel, Field
+
 
 class CampaignType(Enum):
     BUY_N_GET_N = "buy_n_get_n"
     DISCOUNT = "discount"
     COMBO = "combo"
+
 
 class CampaignCreate(BaseModel):
     name: str = Field(..., min_length=1)
@@ -18,11 +21,6 @@ class CampaignCreate(BaseModel):
     conditions: Dict[str, Any]  # Store campaign-specific conditions as JSON
     is_active: bool = True
 
-    @validator('end_date')
-    def validate_dates(cls, end_date, values):
-        if 'start_date' in values and end_date <= values['start_date']:
-            raise ValueError('end_date must be after start_date')
-        return end_date
 
 class CampaignUpdate(BaseModel):
     name: Optional[str] = None
@@ -32,11 +30,6 @@ class CampaignUpdate(BaseModel):
     conditions: Optional[Dict[str, Any]] = None
     is_active: Optional[bool] = None
 
-    @validator('end_date')
-    def validate_dates(cls, end_date, values):
-        if end_date and 'start_date' in values and values['start_date'] and end_date <= values['start_date']:
-            raise ValueError('end_date must be after start_date')
-        return end_date
 
 @dataclass
 class Campaign:

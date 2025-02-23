@@ -1,19 +1,22 @@
-from typing import Protocol, List, Optional
-from core.models.campaign import Campaign, CampaignCreate, CampaignUpdate
+from typing import List, Protocol
+from uuid import UUID
+
+from core.models.campaign import Campaign
 
 
 class CampaignRepository(Protocol):
-    def create(self, campaign: CampaignCreate) -> Campaign:
+    def create(self, campaign: Campaign) -> Campaign:
+        """Create and store a new campaign."""
         ...
 
-    def get(self, campaign_id: int) -> Optional[Campaign]:
+    def get_by_id(self, campaign_id: UUID) -> Campaign:
+        """Retrieve a campaign by its unique identifier."""
         ...
 
-    def get_all(self) -> List[Campaign]:
+    def deactivate(self, campaign_id: UUID) -> None:
+        """Deactivate a campaign by its unique identifier."""
         ...
 
-    def update(self, campaign_id: int, campaign: CampaignUpdate) -> Optional[Campaign]:
-        ...
-
-    def delete(self, campaign_id: int) -> bool:
+    def get_active_campaigns(self) -> List[Campaign]:
+        """Retrieve all active campaigns."""
         ...

@@ -1,4 +1,4 @@
-from typing import List, Optional, Protocol
+from typing import List, Protocol
 from uuid import UUID
 
 from core.models.receipt import Payment, Receipt, ReceiptStatus

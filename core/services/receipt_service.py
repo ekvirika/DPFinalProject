@@ -24,7 +24,7 @@ class ReceiptService:
         self,
         receipt_repo: ReceiptRepository,
         exchange_service: ExchangeService,
-        campaign_service: CampaignService
+        campaign_service: CampaignService,
     ):
         self._receipt_repo = receipt_repo
         self._exchange_service = exchange_service
@@ -54,8 +54,9 @@ class ReceiptService:
         exchange_rate = self._exchange_service.get_rate(PaymentCurrency.GEL, currency)
         return round(receipt.total_amount * exchange_rate, 2)
 
-    def add_payment(self, receipt_id: UUID,
-                    amount: float, currency: PaymentCurrency) -> Receipt:
+    def add_payment(
+        self, receipt_id: UUID, amount: float, currency: PaymentCurrency
+    ) -> Receipt:
         receipt = self._receipt_repo.get(receipt_id)
         # if not receipt:
         #     raise ReceiptNotFoundError(str(receipt_id))
@@ -64,7 +65,8 @@ class ReceiptService:
         #     raise ReceiptStatusError(receipt.status.value, "add payment to")
 
         exchange_rate = (
-            1.0 if currency == PaymentCurrency.GEL
+            1.0
+            if currency == PaymentCurrency.GEL
             else self._exchange_service.get_rate(PaymentCurrency.GEL, currency)
         )
 
@@ -72,7 +74,7 @@ class ReceiptService:
             amount=amount,
             currency=currency,
             exchange_rate=exchange_rate,
-            timestamp=datetime.now()
+            timestamp=datetime.now(),
         )
 
         gel_amount = round(amount * exchange_rate, 2)
@@ -91,7 +93,7 @@ class ReceiptService:
 
         total_paid = round(
             sum(payment.amount * payment.exchange_rate for payment in receipt.payments),
-            2
+            2,
         )
         if total_paid < receipt.total_amount:
             raise InsufficientPaymentError()

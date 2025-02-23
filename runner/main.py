@@ -1,5 +1,6 @@
-from fastapi import FastAPI
 from api.campaigns import router as campaign_router
+from fastapi import FastAPI
+
 from infra.db.database import SQLiteDatabase
 
 

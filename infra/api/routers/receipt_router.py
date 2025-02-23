@@ -69,7 +69,7 @@ router = APIRouter(prefix="/receipts", tags=["receipts"])
 @router.post("", status_code=status.HTTP_201_CREATED)
 def create_receipt(
     request: CreateReceiptRequest,
-    service: ReceiptService = Depends(get_receipt_service)
+    service: ReceiptService = Depends(get_receipt_service),
 ) -> dict[str, ReceiptResponse]:
     receipt = service.create_receipt(request.shift_id)
     return {"receipt": ReceiptResponse.from_orm(receipt)}
@@ -79,7 +79,7 @@ def create_receipt(
 def add_item(
     receipt_id: UUID,
     request: AddItemRequest,
-    service: ReceiptService = Depends(get_receipt_service)
+    service: ReceiptService = Depends(get_receipt_service),
 ) -> dict[str, ReceiptResponse]:
     receipt = service.add_item(receipt_id, request.product_id, request.quantity)
     return {"receipt": ReceiptResponse.from_orm(receipt)}
@@ -89,7 +89,7 @@ def add_item(
 def calculate_payment(
     receipt_id: UUID,
     request: PaymentQuoteRequest,
-    service: ReceiptService = Depends(get_receipt_service)
+    service: ReceiptService = Depends(get_receipt_service),
 ) -> dict[str, PaymentQuoteResponse]:
     amount = service.calculate_payment(receipt_id, request.currency)
     return {"quote": PaymentQuoteResponse(amount=amount, currency=request.currency)}
@@ -99,7 +99,7 @@ def calculate_payment(
 def add_payment(
     receipt_id: UUID,
     request: PaymentRequest,
-    service: ReceiptService = Depends(get_receipt_service)
+    service: ReceiptService = Depends(get_receipt_service),
 ) -> dict[str, ReceiptResponse]:
     receipt = service.add_payment(receipt_id, request.amount, request.currency)
     return {"receipt": ReceiptResponse.from_orm(receipt)}
@@ -107,8 +107,7 @@ def add_payment(
 
 @router.post("/{receipt_id}/close")
 def close_receipt(
-    receipt_id: UUID,
-    service: ReceiptService = Depends(get_receipt_service)
+    receipt_id: UUID, service: ReceiptService = Depends(get_receipt_service)
 ) -> dict[str, ReceiptResponse]:
     receipt = service.close_receipt(receipt_id)
     return {"receipt": ReceiptResponse.from_orm(receipt)}
@@ -116,8 +115,7 @@ def close_receipt(
 
 @router.get("")
 def get_shift_receipts(
-    shift_id: UUID,
-    service: ReceiptService = Depends(get_receipt_service)
+    shift_id: UUID, service: ReceiptService = Depends(get_receipt_service)
 ) -> dict[str, List[ReceiptResponse]]:
     receipts = service.get_shift_receipts(shift_id)
     return {"receipts": [ReceiptResponse.from_orm(receipt) for receipt in receipts]}
