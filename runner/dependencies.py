@@ -8,23 +8,14 @@ from infra.db.database import SQLiteDatabase, Database
 from infra.repositories.receipt_sqlite_repository import SQLiteReceiptRepository
 
 
-class ExchangeService(Protocol):
-    def get_rate(self, from_currency: str, to_currency: str) -> float:
-        ...
-
-
-class CampaignService(Protocol):
-    def apply_campaigns(self, receipt_id: int) -> None:
-        ...
-
 
 @dataclass
 class AppContainer:
     db: Database
     receipt_repository: ReceiptRepository
     receipt_service: ReceiptService
-    exchange_service: ExchangeService
-    campaign_service: CampaignService
+    # exchange_service: ExchangeService
+    # campaign_service: CampaignService
 
 
 def create_app_container(db_path: str) -> AppContainer:
