@@ -1,3 +1,5 @@
+from http import HTTPStatus
+
 from fastapi import HTTPException, status
 
 
@@ -57,4 +59,28 @@ class ExchangeRateNotFoundError(POSException):
             detail=f"Exchange rate from '{from_currency}'"
                    f" to '{to_currency}' not found.",
             error_code="EXCHANGE_RATE_NOT_FOUND"
+        )
+
+class CampaignNotFoundError(POSException):
+    def __init__(self, campaign_id: str):
+        super().__init__(
+            message=f"Campaign with id {campaign_id} not found",
+            status_code=HTTPStatus.NOT_FOUND,
+            error_code="CAMPAIGN_NOT_FOUND"
+        )
+
+class CampaignValidationError(POSException):
+    def __init__(self, message: str):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.BAD_REQUEST,
+            error_code="CAMPAIGN_VALIDATION_ERROR"
+        )
+
+class CampaignDatabaseError(POSException):
+    def __init__(self, message: str):
+        super().__init__(
+            message=message,
+            status_code=HTTPStatus.INTERNAL_SERVER_ERROR,
+            error_code="CAMPAIGN_DATABASE_ERROR"
         )
