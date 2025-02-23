@@ -1,8 +1,11 @@
 from dataclasses import dataclass
+from typing import Generator
+
 from fastapi import Depends
 
-from core.services.receipt_service import ReceiptService
+from core.services.receipt_service import ReceiptService, CampaignService
 from infra.db.database import Database, SQLiteDatabase  # Import SQLiteDatabase
+from infra.repositories.campaign_sqlite_repository import SQLiteCampaignRepository
 from infra.repositories.receipt_sqlite_repository import SQLiteReceiptRepository
 
 
@@ -35,3 +38,11 @@ def create_app_container(db_path: str) -> AppContainer:
 def get_receipt_service(container: AppContainer = Depends(create_app_container)) -> ReceiptService:
     """Dependency to get the ReceiptService instance."""
     return container.receipt_service
+
+def get_campaign_repository() -> SQLiteCampaignRepository:
+    return SQLiteCampaignRepository("pos.db")
+
+def get_campaign_service() -> Generator[    CampaignService, None, None]:
+    repository = get_campaign_repository()
+    service = CampaignService(repository)
+    yield service
