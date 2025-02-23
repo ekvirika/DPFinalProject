@@ -1,11 +1,8 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from decimal import Decimal
 from enum import Enum
-from typing import Optional, List
+from typing import List, Optional
 from uuid import UUID
-
-from pydantic.v1 import UUID1
 
 
 class PaymentCurrency(str, Enum):
@@ -20,7 +17,8 @@ class ReceiptStatus(str, Enum):
     PAID = "PAID"
     CANCELLED = "CANCELLED"
 
-@dataclass
+
+@dataclass(frozen=True)
 class ReceiptItem:
     product_id: UUID
     quantity: int
@@ -28,14 +26,16 @@ class ReceiptItem:
     discount: Optional[float] = None
     campaign_id: Optional[int] = None
 
-@dataclass
+
+@dataclass(frozen=True)
 class Payment:
     amount: float
     currency: PaymentCurrency
     exchange_rate: float
     timestamp: datetime
 
-@dataclass
+
+@dataclass(frozen=True)
 class Receipt:
     id: UUID
     shift_id: UUID
@@ -44,4 +44,4 @@ class Receipt:
     created_at: datetime
     total_amount: float
     discount_amount: Optional[float] = None
-    payments: List[Payment] = None
+    payments: List[Payment] = field(default_factory=list)

@@ -1,45 +1,37 @@
-# core/dependencies.py
 from dataclasses import dataclass
-from typing import Protocol
+from fastapi import Depends
 
-from core.models.repositories.receipt_repository import ReceiptRepository
 from core.services.receipt_service import ReceiptService
-from infra.db.database import SQLiteDatabase, Database
+from infra.db.database import Database, SQLiteDatabase  # Import SQLiteDatabase
 from infra.repositories.receipt_sqlite_repository import SQLiteReceiptRepository
-
 
 
 @dataclass
 class AppContainer:
     db: Database
-    receipt_repository: ReceiptRepository
+    receipt_repository: SQLiteReceiptRepository
     receipt_service: ReceiptService
-    # exchange_service: ExchangeService
-    # campaign_service: CampaignService
 
 
 def create_app_container(db_path: str) -> AppContainer:
+    """Create and initialize the application container."""
     # Initialize database
-    database = SQLiteDatabase(db_path)
-    database.init_db()
+    db = SQLiteDatabase(db_path)  # Use SQLiteDatabase instead of Database
+    db.init_db()
 
     # Initialize repositories
-    receipt_repository = SQLiteReceiptRepository(database)
+    receipt_repository = SQLiteReceiptRepository(db)
 
     # Initialize services
-    # exchange_service = DummyExchangeService()  # TODO: Replace with real implementation
-    # campaign_service = DummyCampaignService()  # TODO: Replace with real implementation
-    #
-    # receipt_service = ReceiptService(
-    #     receipt_repo=receipt_repository,
-    #     exchange_service=exchange_service,
-    #     campaign_service=campaign_service
-    # )
-    #
-    # return AppContainer(
-    #     db=database,
-    #     receipt_repository=receipt_repository,
-    #     receipt_service=receipt_service,
-    #     exchange_service=exchange_service,
-    #     campaign_service=campaign_service
-    # )
+    receipt_service = ReceiptService(receipt_repo=receipt_repository)  # Use receipt_repo
+
+    return AppContainer(
+        db=db,
+        receipt_repository=receipt_repository,
+        receipt_service=receipt_service
+    )
+
+
+def get_receipt_service(container: AppContainer = Depends(create_app_container)) -> ReceiptService:
+    """Dependency to get the ReceiptService instance."""
+    return container.receipt_service

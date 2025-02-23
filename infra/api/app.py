@@ -2,21 +2,15 @@ from functools import lru_cache
 
 from fastapi import FastAPI
 
-from core.services import receipt_service
-from core.services.receipt_service import ReceiptService
-from infra.api.routers.receipt_router import ReceiptRouter
-from infra.repositories.receipt_sqlite_repository import SQLiteReceiptRepository
-from runner.dependencies import AppContainer, create_app_container
+from infra.api.routers.receipt_router import router as receipt_router
+from runner.dependencies import create_app_container, AppContainer
 
 app = FastAPI()
 
 @lru_cache()
 def get_app_container() -> AppContainer:
+    """Create and cache the application container."""
     return create_app_container("pos.db")
 
-def get_receipt_service():
-    container = get_app_container()
-    return container.receipt_service
-# Initialize and include routers
-receipt_router = ReceiptRouter(receipt_service)
-app.include_router(receipt_router.router)
+# Include the router in the app
+app.include_router(receipt_router)
