@@ -3,13 +3,15 @@ from datetime import datetime
 from decimal import Decimal
 from enum import Enum
 from typing import Optional, List
+from uuid import UUID
+
+from pydantic.v1 import UUID1
 
 
 class PaymentCurrency(str, Enum):
     GEL = "GEL"
     USD = "USD"
     EUR = "EUR"
-
 
 
 class ReceiptStatus(str, Enum):
@@ -20,7 +22,7 @@ class ReceiptStatus(str, Enum):
 
 @dataclass
 class ReceiptItem:
-    product_id: int
+    product_id: UUID
     quantity: int
     unit_price: float
     discount: Optional[float] = None
@@ -35,8 +37,8 @@ class Payment:
 
 @dataclass
 class Receipt:
-    id: int
-    shift_id: int
+    id: UUID
+    shift_id: UUID
     items: List[ReceiptItem]
     status: ReceiptStatus
     created_at: datetime
