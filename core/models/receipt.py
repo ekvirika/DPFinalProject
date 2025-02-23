@@ -28,9 +28,9 @@ class ReceiptItem:
 
 @dataclass
 class Payment:
-    amount: Decimal
+    amount: float
     currency: PaymentCurrency
-    exchange_rate: Decimal
+    exchange_rate: float
     timestamp: datetime
 
 @dataclass
@@ -40,6 +40,6 @@ class Receipt:
     items: List[ReceiptItem]
     status: ReceiptStatus
     created_at: datetime
-    total_amount: Decimal
-    discount_amount: Optional[Decimal] = None
+    total_amount: float
+    discount_amount: Optional[float] = None
     payments: List[Payment] = None
