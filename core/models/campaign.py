@@ -9,7 +9,8 @@ from pydantic import BaseModel, Field
 
 class CampaignType(Enum):
     BUY_N_GET_N = "buy_n_get_n"
-    DISCOUNT = "discount"
+    DISCOUNT_PRODUCT = "discount_product"
+    DISCOUNT_TOTAL = "discount_total"
     COMBO = "combo"
 
 
@@ -41,3 +42,4 @@ class Campaign:
     conditions: Dict[str, Any]
     is_active: bool
     created_at: datetime
+x
