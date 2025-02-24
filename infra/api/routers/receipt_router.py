@@ -62,7 +62,7 @@ class PaymentQuoteResponse(BaseModel):
 
 
 # --- Router Initialization ---
-router = APIRouter(prefix="/receipts", tags=["receipts"])
+router = APIRouter()
 
 
 # --- Endpoints ---

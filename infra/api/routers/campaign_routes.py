@@ -2,13 +2,13 @@ from datetime import datetime
 from typing import List
 from uuid import UUID
 
-from fastapi import Depends
+from fastapi import Depends, APIRouter
 from pydantic import BaseModel
 
 from core.services.campaign_service import CampaignService
 from infra.api.app import app
-from runner.dependencies import get_campaign_service
 
+router = APIRouter()
 
 class CampaignCreate(BaseModel):
     name: str
@@ -28,7 +28,7 @@ class CampaignResponse(BaseModel):
     rules: dict[str, int]
 
 
-@app.post("/campaigns", response_model=CampaignResponse)
+@router.post("/", response_model=CampaignResponse)
 def create_campaign(
     campaign_data: CampaignCreate,
     campaign_service: CampaignService = Depends(get_campaign_service),
@@ -51,7 +51,7 @@ def create_campaign(
     )
 
 
-@app.get("/campaigns", response_model=List[CampaignResponse])
+@router.get("/", response_model=List[CampaignResponse])
 def list_campaigns(
     campaign_service: CampaignService = Depends(get_campaign_service),
 ) -> List[CampaignResponse]:
@@ -70,7 +70,7 @@ def list_campaigns(
     ]
 
 
-@app.delete("/campaigns/{campaign_id}")
+@router.delete("/{campaign_id}")
 def deactivate_campaign(
     campaign_id: UUID, campaign_service: CampaignService = Depends(get_campaign_service)
 ) -> dict[str, str]:
