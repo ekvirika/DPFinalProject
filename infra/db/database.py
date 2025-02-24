@@ -30,7 +30,6 @@ class SQLiteDatabase:
                     id TEXT PRIMARY KEY,  -- UUID as TEXT
                     name TEXT NOT NULL,
                     price REAL NOT NULL,
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
                 );
 
                 CREATE TABLE IF NOT EXISTS campaigns (

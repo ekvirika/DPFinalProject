@@ -18,7 +18,7 @@ from core.services.exchange_service import ExchangeService
 from core.services.report_service import ReportService
 from core.services.shift_service import ShiftService
 
-from infra.database import SQLiteDatabase, Database
+from infra.db.database import SQLiteDatabase, Database
 from infra.repositories.receipt_repository import SQLiteReceiptRepository
 from infra.repositories.product_repository import SQLiteProductRepository
 from infra.repositories.campaign_repository import SQLiteCampaignRepository

@@ -8,7 +8,7 @@ class ProductRepository(Protocol):
     def create(self, product: Product) -> Product:
         pass
 
-    def get_by_id(self, product_id: UUID) -> Optional[Product]:
+    def get_by_id(self, id: UUID) -> Optional[Product]:
         pass
 
     def get_all(self) -> List[Product]:
