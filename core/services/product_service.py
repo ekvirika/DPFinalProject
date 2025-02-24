@@ -21,4 +21,3 @@ class ProductService:
 
     def get_all_products(self) -> List[Product]:
         return self.product_repository.get_all()
-

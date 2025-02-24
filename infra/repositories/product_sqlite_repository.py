@@ -6,7 +6,7 @@ from core.models.repositories.product_repository import ProductRepository
 from infra.db.database import Database
 
 
-class SQLiteReceiptRepository(ProductRepository):
+class SQLiteProductRepository(ProductRepository):
     def __init__(self, database: Database):
         self.database = database
 

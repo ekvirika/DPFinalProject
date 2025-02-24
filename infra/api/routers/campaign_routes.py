@@ -2,13 +2,14 @@ from datetime import datetime
 from typing import List
 from uuid import UUID
 
-from fastapi import Depends, APIRouter
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from core.services.campaign_service import CampaignService
-from infra.api.app import app
+from runner.dependencies import get_campaign_service
 
 router = APIRouter()
+
 
 class CampaignCreate(BaseModel):
     name: str
@@ -31,7 +32,8 @@ class CampaignResponse(BaseModel):
 @router.post("/", response_model=CampaignResponse)
 def create_campaign(
     campaign_data: CampaignCreate,
-    campaign_service: CampaignService = Depends(get_campaign_service),
+    campaign_service: CampaignService =
+    Depends(get_campaign_service),
 ) -> CampaignResponse:
     campaign = campaign_service.create_campaign(
         name=campaign_data.name,
@@ -53,7 +55,8 @@ def create_campaign(
 
 @router.get("/", response_model=List[CampaignResponse])
 def list_campaigns(
-    campaign_service: CampaignService = Depends(get_campaign_service),
+    campaign_service: CampaignService =
+    Depends(get_campaign_service),
 ) -> List[CampaignResponse]:
     campaigns = campaign_service.get_active_campaigns()
     return [
@@ -72,7 +75,8 @@ def list_campaigns(
 
 @router.delete("/{campaign_id}")
 def deactivate_campaign(
-    campaign_id: UUID, campaign_service: CampaignService = Depends(get_campaign_service)
+    campaign_id: UUID, campaign_service:
+        CampaignService = Depends(get_campaign_service)
 ) -> dict[str, str]:
     campaign_service.deactivate_campaign(campaign_id)
     return {"message": "Campaign deactivated successfully"}

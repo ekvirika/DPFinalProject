@@ -7,4 +7,3 @@ class Product:
     id: UUID
     name: str
     price: float
-

@@ -9,10 +9,7 @@ from core.models.errors import (
 )
 from core.models.receipt import Payment, PaymentCurrency, Receipt, ReceiptStatus
 from core.models.repositories.receipt_repository import ReceiptRepository
-
-
-class CampaignService:
-    pass
+from core.services.campaign_service import CampaignService
 
 
 class ExchangeService:
