@@ -1,66 +1,132 @@
+"""
+Dependency injection container and provider functions.
+"""
+from functools import lru_cache
+from pathlib import Path
+import os
 from dataclasses import dataclass
 
-from core.services.campaign_service import CampaignService
-from core.services.product_service import ProductService
+from core.models.receipt import ReceiptRepository
+from core.models.product import ProductRepository
+from core.models.campaign import CampaignRepository
+from core.models.shift import ShiftRepository
+
 from core.services.receipt_service import ReceiptService
-from infra.db.database import Database, SQLiteDatabase
-from infra.repositories.campaign_sqlite_repository import SQLiteCampaignRepository
-from infra.repositories.product_sqlite_repository import (
-    SQLiteProductRepository,
-)
-from infra.repositories.receipt_sqlite_repository import SQLiteReceiptRepository
+from core.services.product_service import ProductService
+from core.services.campaign_service import CampaignService
+from core.services.exchange_service import ExchangeService
+from core.services.report_service import ReportService
+from core.services.shift_service import ShiftService
+
+from infra.database import SQLiteDatabase, Database
+from infra.repositories.receipt_repository import SQLiteReceiptRepository
+from infra.repositories.product_repository import SQLiteProductRepository
+from infra.repositories.campaign_repository import SQLiteCampaignRepository
+from infra.repositories.shift_repository import SQLiteShiftRepository
 
 
 @dataclass
 class AppContainer:
+    """Container for all application dependencies."""
     db: Database
-    receipt_repository: SQLiteReceiptRepository
+
+    # Repositories
+    receipt_repository: ReceiptRepository
+    product_repository: ProductRepository
+    campaign_repository: CampaignRepository
+    shift_repository: ShiftRepository
+
+    # Services
     receipt_service: ReceiptService
-    campaign_repository: SQLiteCampaignRepository
-    campaign_service: CampaignService
-    product_repository: SQLiteProductRepository
     product_service: ProductService
+    campaign_service: CampaignService
+    exchange_service: ExchangeService
+    report_service: ReportService
+    shift_service: ShiftService
 
 
-def create_app_container(db_path: str) -> AppContainer:
-    """Create and initialize the application container."""
-    # Initialize the database
-    db = SQLiteDatabase(db_path)
-    db.init_db()
+@lru_cache()
+def get_app_container() -> AppContainer:
+    """
+    Creates and returns the application container.
+    Uses lru_cache to ensure single instance.
+    """
+    # Determine database path
+    db_path = os.environ.get("DB_PATH", "pos.db")
+
+    # Initialize database
+    database = SQLiteDatabase(db_path)
 
     # Initialize repositories
-    receipt_repository = SQLiteReceiptRepository(db)
-    campaign_repository = SQLiteCampaignRepository(db)
-    product_repository = SQLiteProductRepository(db)
+    receipt_repository = SQLiteReceiptRepository(database)
+    product_repository = SQLiteProductRepository(database)
+    campaign_repository = SQLiteCampaignRepository(database)
+    shift_repository = SQLiteShiftRepository(database)
 
     # Initialize services
-    campaign_service = CampaignService(campaign_repository)
+    exchange_service = ExchangeService()
+
+    product_service = ProductService(
+        product_repo=product_repository
+    )
+
+    campaign_service = CampaignService(
+        campaign_repo=campaign_repository,
+        product_repo=product_repository
+    )
+
+    shift_service = ShiftService(
+        shift_repo=shift_repository
+    )
+
     receipt_service = ReceiptService(
         receipt_repo=receipt_repository,
+        exchange_service=exchange_service,
         campaign_service=campaign_service,
-        exchange_service=None,
+        product_service=product_service
     )
-    product_service = ProductService(product_repository)
+
+    report_service = ReportService(
+        receipt_repo=receipt_repository,
+        shift_repo=shift_repository
+    )
 
     return AppContainer(
-        db=db,
+        db=database,
         receipt_repository=receipt_repository,
-        receipt_service=receipt_service,
-        campaign_repository=campaign_repository,
-        campaign_service=campaign_service,
         product_repository=product_repository,
+        campaign_repository=campaign_repository,
+        shift_repository=shift_repository,
+        receipt_service=receipt_service,
         product_service=product_service,
+        campaign_service=campaign_service,
+        exchange_service=exchange_service,
+        report_service=report_service,
+        shift_service=shift_service
     )
 
 
-# Dependency injection functions
-def get_receipt_service(container: AppContainer) -> ReceiptService:
+# Convenience dependency provider functions
+def get_receipt_service() -> ReceiptService:
+    container = get_app_container()
     return container.receipt_service
 
 
-def get_campaign_service(container: AppContainer) -> CampaignService:
+def get_product_service() -> ProductService:
+    container = get_app_container()
+    return container.product_service
+
+
+def get_campaign_service() -> CampaignService:
+    container = get_app_container()
     return container.campaign_service
 
 
-def get_product_service(container: AppContainer) -> ProductService:
-    return container.product_service
+def get_report_service() -> ReportService:
+    container = get_app_container()
+    return container.report_service
+
+
+def get_shift_service() -> ShiftService:
+    container = get_app_container()
+    return container.shift_service
