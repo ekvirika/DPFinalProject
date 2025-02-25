@@ -7,7 +7,7 @@ from uuid import UUID, uuid4
 from core.models.campaign import Campaign, CampaignType, DiscountRule, BuyNGetNRule, ComboRule
 from core.models.errors import CampaignDatabaseError, CampaignNotFoundError
 from core.models.repositories.campaign_repository import CampaignRepository
-from infra.db.database import Database
+from infra.db.database import Database, serialize_json, deserialize_json
 
 
 class SQLiteCampaignRepository:
