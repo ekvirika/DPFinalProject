@@ -5,7 +5,8 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
 
-from core.models.receipt import PaymentCurrency, ReceiptStatus
+from core.models.repositories.receipt_repository import ReceiptStatus
+from core.models.repositories.payment_repository import PaymentCurrency
 from core.services.receipt_service import ReceiptService
 from runner.dependencies import get_receipt_service
 

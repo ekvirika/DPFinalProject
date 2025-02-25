@@ -1,6 +1,7 @@
 from typing import List, Optional
 
 from core.models.receipt import Payment, Currency, PaymentStatus
+from infra.db.database import Database
 
 
 class SQLitePaymentRepository:
