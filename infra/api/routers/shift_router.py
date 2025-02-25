@@ -1,8 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException
 from uuid import UUID
 
-from infra.api.models.shift import ShiftCreate, ShiftListResponse, ShiftReportResponse, ShiftResponse
+from fastapi import APIRouter, Depends, HTTPException
+
 from core.services.shift_service import ShiftService
+from infra.api.schemas.shift import (
+    ShiftCreate,
+    ShiftListResponse,
+    ShiftReportResponse,
+    ShiftResponse,
+)
 from runner.dependencies import get_shift_service
 
 router = APIRouter(prefix="/shifts", tags=["Shifts"])

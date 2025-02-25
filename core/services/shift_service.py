@@ -1,7 +1,7 @@
 from uuid import UUID
 
-from core.models.shift import Shift, ShiftReport, ShiftStatus
 from core.models.repositories.shift_repository import ShiftRepository
+from core.models.shift import Shift, ShiftReport, ShiftStatus
 
 
 class ShiftService:
