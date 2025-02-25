@@ -1,47 +1,91 @@
+import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum
-from typing import List, Optional
-from uuid import UUID
+from typing import List
 
 
-class PaymentCurrency(str, Enum):
+class ReceiptStatus(Enum):
+    OPEN = "open"
+    CLOSED = "closed"
+
+
+class Currency(Enum):
     GEL = "GEL"
     USD = "USD"
     EUR = "EUR"
 
 
-class ReceiptStatus(str, Enum):
-    OPEN = "OPEN"
-    PENDING_PAYMENT = "PENDING_PAYMENT"
-    PAID = "PAID"
-    CANCELLED = "CANCELLED"
+class PaymentStatus(Enum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    FAILED = "failed"
+
+@dataclass
+class Discount:
+    campaign_id: str
+    campaign_name: str
+    discount_amount: float
 
 
-@dataclass(frozen=True)
+@dataclass
 class ReceiptItem:
-    product_id: UUID
+    product_id: str
     quantity: int
     unit_price: float
-    discount: Optional[float] = None
-    campaign_id: Optional[int] = None
+    total_price: float = field(init=False)
+    discounts: List[Discount] = field(default_factory=list)
+    final_price: float = field(init=False)
+
+    def __post_init__(self) -> None:
+        self.total_price = self.unit_price * self.quantity
+        self.final_price = self.total_price - sum(d.discount_amount for d in self.discounts)
 
 
-@dataclass(frozen=True)
+@dataclass
 class Payment:
-    amount: float
-    currency: PaymentCurrency
+    receipt_id: str
+    payment_amount: float
+    currency: Currency
+    total_in_gel: float
     exchange_rate: float
-    timestamp: datetime
+    status: PaymentStatus = PaymentStatus.PENDING
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
 
 
-@dataclass(frozen=True)
+@dataclass
 class Receipt:
-    id: UUID
-    shift_id: UUID
-    items: List[ReceiptItem]
-    status: ReceiptStatus
-    created_at: datetime
-    total_amount: float
-    discount_amount: Optional[float] = None
+    shift_id: str
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    status: ReceiptStatus = ReceiptStatus.OPEN
+    products: List[ReceiptItem] = field(default_factory=list)
     payments: List[Payment] = field(default_factory=list)
+    subtotal: float = 0
+    discount_amount: float = 0
+    total: float = 0
+
+    def recalculate_totals(self) -> None:
+        self.subtotal = sum(item.total_price for item in self.products)
+        self.discount_amount = sum(sum(d.discount_amount for d in item.discounts) for item in self.products)
+        self.total = self.subtotal - self.discount_amount
+
+
+@dataclass
+class ItemSold:
+    product_id: str
+    name: str
+    quantity: int
+
+
+@dataclass
+class RevenueByCurrency:
+    currency: Currency
+    amount: float
+
+@dataclass
+class Quote:
+    receipt_id: str
+    base_currency: Currency
+    requested_currency: Currency
+    exchange_rate: float
+    total_in_base_currency: float
+    total_in_requested_currency: float
