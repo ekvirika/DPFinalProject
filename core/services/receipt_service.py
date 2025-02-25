@@ -1,101 +1,117 @@
-from datetime import datetime
-from typing import List
 from uuid import UUID
+from typing import List, Dict, Optional, Tuple
+from fastapi import Depends
 
-from core.models.errors import (
-    InsufficientPaymentError,
-    ReceiptNotFoundError,
-    ReceiptStatusError,
-)
-from core.models.receipt import Payment, PaymentCurrency, Receipt, ReceiptStatus
+from core.models.receipt import Receipt, ReceiptStatus, Payment, Currency, PaymentStatus, Quote
+from core.models.repositories.payment_repository import PaymentRepository
+from core.models.repositories.product_repository import ProductRepository
 from core.models.repositories.receipt_repository import ReceiptRepository
-from core.services.campaign_service import CampaignService
+from core.models.repositories.shift_repository import ShiftRepository
+from core.models.shift import ShiftStatus
+from core.services.discount_service import DiscountService
+from core.services.exchange_rate_service import ExchangeRateService
 
 
-class ExchangeService:
-    pass
 
 
 class ReceiptService:
     def __init__(
-        self,
-        receipt_repo: ReceiptRepository,
-        exchange_service: ExchangeService,
-        campaign_service: CampaignService,
+            self,
+            receipt_repository: ReceiptRepository,
+            product_repository: ProductRepository,
+            shift_repository: ShiftRepository,
+            discount_service: DiscountService,
+            exchange_service: ExchangeRateService,
+            payment_repository: PaymentRepository
     ):
-        self._receipt_repo = receipt_repo
-        self._exchange_service = exchange_service
-        self._campaign_service = campaign_service
+        self.receipt_repository = receipt_repository
+        self.product_repository = product_repository
+        self.shift_repository = shift_repository
+        self.discount_service = discount_service
+        self.exchange_service = exchange_service
+        self.payment_repository = payment_repository
 
-    def create_receipt(self, shift_id: UUID) -> Receipt:
-        return self._receipt_repo.create(shift_id)
+    def create_receipt(self, shift_id: UUID) -> Optional[Receipt]:
+        """Create a new receipt for a shift."""
+        shift = self.shift_repository.get_by_id(shift_id)
+        if not shift or shift.status == ShiftStatus.CLOSED:
+            return None
 
-    def add_item(self, receipt_id: UUID, product_id: UUID, quantity: int) -> Receipt:
-        # receipt = self._receipt_repo.get(receipt_id)
-        # if not receipt:
-        #     raise ReceiptNotFoundError(str(receipt_id))
-        #
-        # if receipt.status != ReceiptStatus.OPEN:
-        #     raise ReceiptStatusError(receipt.status.value, "add items to")
+        return self.receipt_repository.create(shift_id)
 
-        return self._receipt_repo.add_item(receipt_id, product_id, quantity)
+    def get_receipt(self, receipt_id: UUID) -> Optional[Receipt]:
+        """Get a receipt by ID."""
+        return self.receipt_repository.get(receipt_id)
 
-    def calculate_payment(self, receipt_id: UUID, currency: PaymentCurrency) -> float:
-        receipt = self._receipt_repo.get(receipt_id)
-        # if not receipt:
-        #     raise ReceiptNotFoundError(str(receipt_id))
-        #
-        # if currency == PaymentCurrency.GEL:
-        #     return round(receipt.total_amount, 2)
+    def add_product(self, receipt_id: UUID, product_id: UUID, quantity: int) -> Optional[Receipt]:
+        """Add a product to a receipt with automatic discount application."""
+        receipt = self.receipt_repository.get(receipt_id)
+        if not receipt or receipt.status == ReceiptStatus.CLOSED:
+            return None
 
-        exchange_rate = self._exchange_service.get_rate(PaymentCurrency.GEL, currency)
-        return round(receipt.total_amount * exchange_rate, 2)
+        product = self.product_repository.get_by_id(str(product_id))
+        if not product:
+            return None
 
-    def add_payment(
-        self, receipt_id: UUID, amount: float, currency: PaymentCurrency
-    ) -> Receipt:
-        receipt = self._receipt_repo.get(receipt_id)
-        # if not receipt:
-        #     raise ReceiptNotFoundError(str(receipt_id))
-        #
-        # if receipt.status != ReceiptStatus.PENDING_PAYMENT:
-        #     raise ReceiptStatusError(receipt.status.value, "add payment to")
-
-        exchange_rate = (
-            1.0
-            if currency == PaymentCurrency.GEL
-            else self._exchange_service.get_rate(PaymentCurrency.GEL, currency)
+        # Add product (initially without discounts)
+        updated_receipt = self.receipt_repository.add_product(
+            receipt_id, product_id, quantity, product.price, []
         )
 
-        payment = Payment(
-            amount=amount,
-            currency=currency,
-            exchange_rate=exchange_rate,
-            timestamp=datetime.now(),
-        )
+        if updated_receipt:
+            # Apply discounts
+            updated_receipt = self.discount_service.apply_discounts(updated_receipt)
 
-        gel_amount = round(amount * exchange_rate, 2)
-        if gel_amount < receipt.total_amount:
-            raise InsufficientPaymentError()
+            # Save the updated receipt (with discounts)
+            # In a real implementation, you'd update the database with discount info
+            return updated_receipt
 
-        return self._receipt_repo.add_payment(receipt_id, payment)
+        return None
 
-    def close_receipt(self, receipt_id: UUID) -> Receipt:
-        receipt = self._receipt_repo.get(receipt_id)
+    def calculate_payment_quote(self, receipt_id: UUID, currency: Currency) -> Optional[Quote]:
+        """Calculate payment quote for a receipt in a specific currency."""
+        receipt = self.receipt_repository.get(receipt_id)
         if not receipt:
-            raise ReceiptNotFoundError(str(receipt_id))
+            return None
 
-        if receipt.status != ReceiptStatus.PENDING_PAYMENT:
-            raise ReceiptStatusError(receipt.status.value, "close")
+        quote = self.exchange_service.calculate_quote(str(receipt.total), currency)
+        if quote:
+            quote.receipt_id = receipt_id
 
-        total_paid = round(
-            sum(payment.amount * payment.exchange_rate for payment in receipt.payments),
-            2,
+        return quote
+
+    def add_payment(self, receipt_id: UUID, amount: float, currency: Currency)\
+            -> Optional[Tuple[Payment, Receipt]]:
+        """Add a payment to a receipt and close it if fully paid."""
+        receipt = self.receipt_repository.get(receipt_id)
+        if not receipt or receipt.status == ReceiptStatus.CLOSED:
+            return None
+
+        # Calculate the payment in GEL
+        rate = self.exchange_service.get_exchange_rate(currency, Currency.GEL)
+
+        # Create a payment
+        payment = self.payment_repository.create(
+            str(receipt_id), amount, currency, receipt.total, rate
         )
-        if total_paid < receipt.total_amount:
-            raise InsufficientPaymentError()
 
-        return self._receipt_repo.update_status(receipt_id, ReceiptStatus.PAID)
+        # Add payment to receipt
+        updated_receipt = self.receipt_repository.add_payment(receipt_id, payment)
 
-    def get_shift_receipts(self, shift_id: UUID) -> List[Receipt]:
-        return self._receipt_repo.get_receipts_by_shift(shift_id)
+        # Check if receipt is fully paid
+        if updated_receipt:
+            total_paid = sum(
+                p.payment_amount * self.exchange_service.get_exchange_rate(p.currency, Currency.GEL)
+                for p in updated_receipt.payments
+            )
+
+            if total_paid >= updated_receipt.total:
+                # Close the receipt
+                updated_receipt = self.receipt_repository.update_status(receipt_id, ReceiptStatus.CLOSED)
+
+        return payment, updated_receipt
+
+    def get_receipts_by_shift(self, shift_id: UUID) -> List[Receipt]:
+        """Get all receipts for a shift."""
+        return self.receipt_repository.get_receipts_by_shift(shift_id)
+

@@ -3,6 +3,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List
 
+from pydantic.v1 import UUID1
+
 
 class ReceiptStatus(Enum):
     OPEN = "open"
@@ -22,14 +24,14 @@ class PaymentStatus(Enum):
 
 @dataclass
 class Discount:
-    campaign_id: str
+    campaign_id: uuid.UUID
     campaign_name: str
     discount_amount: float
 
 
 @dataclass
 class ReceiptItem:
-    product_id: str
+    product_id: uuid.UUID
     quantity: int
     unit_price: float
     total_price: float = field(init=False)
@@ -43,19 +45,19 @@ class ReceiptItem:
 
 @dataclass
 class Payment:
-    receipt_id: str
+    receipt_id: uuid.UUID
     payment_amount: float
     currency: Currency
     total_in_gel: float
     exchange_rate: float
     status: PaymentStatus = PaymentStatus.PENDING
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    id: uuid.UUID = field(default_factory=lambda: uuid.uuid4())
 
 
 @dataclass
 class Receipt:
-    shift_id: str
-    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    shift_id: uuid.UUID
+    id: uuid.UUID = field(default_factory=lambda: str(uuid.uuid4()))
     status: ReceiptStatus = ReceiptStatus.OPEN
     products: List[ReceiptItem] = field(default_factory=list)
     payments: List[Payment] = field(default_factory=list)
@@ -71,7 +73,7 @@ class Receipt:
 
 @dataclass
 class ItemSold:
-    product_id: str
+    product_id: uuid.UUID
     name: str
     quantity: int
 
@@ -83,7 +85,7 @@ class RevenueByCurrency:
 
 @dataclass
 class Quote:
-    receipt_id: str
+    receipt_id: uuid.UUID
     base_currency: Currency
     requested_currency: Currency
     exchange_rate: float
