@@ -6,23 +6,25 @@ from pathlib import Path
 import os
 from dataclasses import dataclass
 
-from core.models.receipt import ReceiptRepository
-from core.models.product import ProductRepository
-from core.models.campaign import CampaignRepository
-from core.models.shift import ShiftRepository
+from pandas.io.sql import SQLiteDatabase
+
+from core.models.repositories.receipt_repository import ReceiptRepository
+from core.models.repositories.product_repository import ProductRepository
+from core.models.repositories.campaign_repository import CampaignRepository
+from core.models.repositories.shift_repository import ShiftRepository
 
 from core.services.receipt_service import ReceiptService
 from core.services.product_service import ProductService
 from core.services.campaign_service import CampaignService
-from core.services.exchange_service import ExchangeService
+from core.services.exchange_rate_service import ExchangeRateService
 from core.services.report_service import ReportService
 from core.services.shift_service import ShiftService
 
-from infra.db.database import SQLiteDatabase, Database
-from infra.repositories.receipt_repository import SQLiteReceiptRepository
-from infra.repositories.product_repository import SQLiteProductRepository
-from infra.repositories.campaign_repository import SQLiteCampaignRepository
-from infra.repositories.shift_repository import SQLiteShiftRepository
+from infra.db.database import Database
+from infra.repositories.receipt_sqlite_repository  import SQLiteReceiptRepository
+from infra.repositories.product_sqlite_repository import SQLiteProductRepository
+from infra.repositories.campaign_sqlite_repository import SQLiteCampaignRepository
+from infra.repositories.shift_sqlite_repository import SQLiteShiftRepository
 
 
 @dataclass
@@ -40,7 +42,7 @@ class AppContainer:
     receipt_service: ReceiptService
     product_service: ProductService
     campaign_service: CampaignService
-    exchange_service: ExchangeService
+    exchange_service: ExchangeRateService
     report_service: ReportService
     shift_service: ShiftService
 
@@ -63,7 +65,7 @@ def get_app_container(db_path: str) -> AppContainer:
     shift_repository = SQLiteShiftRepository(database)
 
     # Initialize services
-    exchange_service = ExchangeService()
+    exchange_service = ExchangeRateService  ()
 
     product_service = ProductService(
         product_repo=product_repository
