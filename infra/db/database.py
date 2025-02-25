@@ -1,21 +1,15 @@
 import sqlite3
+import json
 from contextlib import contextmanager
-from typing import Generator, Protocol
 
 
-class Database(Protocol):
-    @contextmanager
-    def get_connection(self) -> Generator[sqlite3.Connection, None, None]: ...
-
-    def init_db(self) -> None: ...
-
-
-class SQLiteDatabase:
-    def __init__(self, db_path: str):
+class Database:
+    def __init__(self, db_path: str = "pos_system.db"):
         self.db_path = db_path
+        self._create_tables()
 
     @contextmanager
-    def get_connection(self) -> Generator[sqlite3.Connection, None, None]:
+    def get_connection(self):
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         try:
@@ -23,68 +17,85 @@ class SQLiteDatabase:
         finally:
             conn.close()
 
-    def init_db(self) -> None:
+    def _create_tables(self):
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
             cursor.execute('''
-                        CREATE TABLE IF NOT EXISTS products (
-                            id TEXT PRIMARY KEY,
-                            name TEXT NOT NULL,
-                            price REAL NOT NULL
-                        )
-                        ''')
-            conn.executescript("""
-                CREATE TABLE IF NOT EXISTS campaigns (
-                    id TEXT PRIMARY KEY,  -- UUID as TEXT
-                    type TEXT NOT NULL,
-                    name TEXT NOT NULL,
-                    start_date TIMESTAMP NOT NULL,
-                    end_date TIMESTAMP NOT NULL,
-                    conditions TEXT NOT NULL,  -- JSON stored as TEXT
-                    is_active BOOLEAN NOT NULL DEFAULT 1,
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                );
+            CREATE TABLE IF NOT EXISTS products (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                price REAL NOT NULL
+            )
+            ''')
 
-                CREATE TABLE IF NOT EXISTS shifts (
-                    id TEXT PRIMARY KEY,  -- UUID as TEXT
-                    cashier_id TEXT NOT NULL,  -- UUID as TEXT
-                    start_time TIMESTAMP NOT NULL,
-                    end_time TIMESTAMP,
-                    status TEXT NOT NULL,
-                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
-                );
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS campaigns (
+                id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                campaign_type TEXT NOT NULL,
+                rules TEXT NOT NULL,
+                is_active INTEGER NOT NULL DEFAULT 1
+            )
+            ''')
 
-                CREATE TABLE IF NOT EXISTS receipts (
-                    id TEXT PRIMARY KEY,  -- UUID as TEXT
-                    shift_id TEXT NOT NULL,  -- UUID as TEXT
-                    status TEXT NOT NULL,
-                    created_at TIMESTAMP NOT NULL,
-                    total_amount REAL NOT NULL,
-                    discount_amount REAL,
-                    FOREIGN KEY (shift_id) REFERENCES shifts (id)
-                );
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS shifts (
+                id TEXT PRIMARY KEY,
+                status TEXT NOT NULL,
+                created_at TIMESTAMP NOT NULL,
+                closed_at TIMESTAMP
+            )
+            ''')
 
-                CREATE TABLE IF NOT EXISTS receipt_items (
-                    id TEXT PRIMARY KEY,  -- UUID as TEXT
-                    receipt_id TEXT NOT NULL,  -- UUID as TEXT
-                    product_id TEXT NOT NULL,  -- UUID as TEXT
-                    quantity INTEGER NOT NULL,
-                    unit_price REAL NOT NULL,
-                    discount REAL,
-                    campaign_id TEXT,  -- UUID as TEXT
-                    FOREIGN KEY (receipt_id) REFERENCES receipts (id),
-                    FOREIGN KEY (product_id) REFERENCES products (id),
-                    FOREIGN KEY (campaign_id) REFERENCES campaigns (id)
-                );
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS receipts (
+                id TEXT PRIMARY KEY,
+                shift_id TEXT NOT NULL,
+                status TEXT NOT NULL,
+                subtotal REAL NOT NULL DEFAULT 0,
+                discount_amount REAL NOT NULL DEFAULT 0,
+                total REAL NOT NULL DEFAULT 0,
+                FOREIGN KEY (shift_id) REFERENCES shifts (id)
+            )
+            ''')
 
-                CREATE TABLE IF NOT EXISTS payments (
-                    id TEXT PRIMARY KEY,  -- UUID as TEXT
-                    receipt_id TEXT NOT NULL,  -- UUID as TEXT
-                    amount REAL NOT NULL,
-                    currency TEXT NOT NULL,
-                    exchange_rate REAL NOT NULL,
-                    timestamp TIMESTAMP NOT NULL,
-                    FOREIGN KEY (receipt_id) REFERENCES receipts (id)
-                );
-            """)
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS receipt_items (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                receipt_id TEXT NOT NULL,
+                product_id TEXT NOT NULL,
+                quantity INTEGER NOT NULL,
+                unit_price REAL NOT NULL,
+                total_price REAL NOT NULL,
+                discounts TEXT NOT NULL DEFAULT '[]',
+                final_price REAL NOT NULL,
+                FOREIGN KEY (receipt_id) REFERENCES receipts (id),
+                FOREIGN KEY (product_id) REFERENCES products (id)
+            )
+            ''')
+
+            cursor.execute('''
+            CREATE TABLE IF NOT EXISTS payments (
+                id TEXT PRIMARY KEY,
+                receipt_id TEXT NOT NULL,
+                payment_amount REAL NOT NULL,
+                currency TEXT NOT NULL,
+                total_in_gel REAL NOT NULL,
+                exchange_rate REAL NOT NULL,
+                status TEXT NOT NULL,
+                FOREIGN KEY (receipt_id) REFERENCES receipts (id)
+            )
+            ''')
+
+            conn.commit()
+
+
+def serialize_json(obj):
+    return json.dumps(obj)
+
+
+def deserialize_json(json_str):
+    if not json_str:
+        return None
+    return json.loads(json_str)
