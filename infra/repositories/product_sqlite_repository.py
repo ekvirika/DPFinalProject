@@ -1,66 +1,66 @@
-from typing import List, Optional
-from uuid import UUID
+from typing import Optional, List
 
 from core.models.product import Product
-from core.models.repositories.product_repository import ProductRepository
 from infra.db.database import Database
 
 
-class SQLiteProductRepository(ProductRepository):
-    def __init__(self, database: Database):
-        self.database = database
+class SQLiteProductRepository:
+    def __init__(self, db: Database):
+        self.db = db
 
-    def create(self, product: Product) -> Product:
-        with self.database.get_connection() as conn:
-            conn.execute(
-                """
-                INSERT INTO products (id, name, price)
-                VALUES (?, ?, ?)
-                """,
-                (str(product.id),
-                 product.name,
-                 product.price),
-            )
-            return Product(
-                id=product.id,
-                name=product.name,
-                price=product.price,
-            )
+    def create(self, name: str, price: float) -> Product:
+        product = Product(name=name, price=price)
 
-    def get_by_id(self, product_id: UUID) -> Optional[Product]:
-        with self.database.get_connection() as conn:
-            result = conn.execute(
-                'SELECT * FROM products WHERE id = ?', (str(product_id),)
-            ).fetchone()
-
-            if result:
-                return Product(
-                    id=result[0],
-                    name=result[2],
-                    price=float(result[4]))
-        return None
-
-    def get_all(self) -> List[Product]:
-        with self.database.get_connection() as conn:
-            result = conn.execute(
-                'SELECT * FROM products'
-            ).fetchall()
-        return [
-            Product(
-                id=UUID(row['id']),
-                name=row['name'],
-                price=float(row['price'])
-            )
-            for row in result
-        ]
-
-    def update(self, product_id: UUID, product: Product) -> Optional[Product]:
-        with self.database.get_connection() as conn:
-            result = conn.execute(
-                'UPDATE products SET price = ? WHERE id = ?',
-                (float(product.price), str(product_id))
+        with self.db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO products (id, name, price) VALUES (?, ?, ?)",
+                (product.id, product.name, product.price)
             )
             conn.commit()
-            if result:
-                return product
-        return None
+
+        return product
+
+    def get_by_id(self, product_id: str) -> Optional[Product]:
+        with self.db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM products WHERE id = ?", (product_id,))
+            row = cursor.fetchone()
+
+            if row:
+                return Product(
+                    id=row["id"],
+                    name=row["name"],
+                    price=row["price"]
+                )
+
+            return None
+
+    def get_all(self) -> List[Product]:
+        with self.db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM products")
+            rows = cursor.fetchall()
+
+            return [
+                Product(
+                    id=row["id"],
+                    name=row["name"],
+                    price=row["price"]
+                )
+                for row in rows
+            ]
+
+    def update_price(self, product_id: str, price: float) -> Optional[Product]:
+        with self.db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE products SET price = ? WHERE id = ?",
+                (price, product_id)
+            )
+            conn.commit()
+
+            if cursor.rowcount > 0:
+                return self.get_by_id(product_id)
+
+            return None
