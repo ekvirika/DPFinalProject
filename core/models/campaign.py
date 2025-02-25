@@ -1,11 +1,11 @@
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional, List
+from typing import Any, Dict, Optional, List, Union
 from uuid import UUID
 
 from pydantic import BaseModel, Field
-
 
 
 class CampaignType(Enum):
@@ -14,34 +14,12 @@ class CampaignType(Enum):
     COMBO = "combo"
 
 
-class CampaignCreate(BaseModel):
-    name: str = Field(..., min_length=1)
-    type: CampaignType
-    start_date: datetime
-    end_date: datetime
-    conditions: Dict[str, Any]  # Store campaign-specific conditions as JSON
-    is_active: bool = True
-
-
-class CampaignUpdate(BaseModel):
-    name: Optional[str] = None
-    type: Optional[CampaignType] = None
-    start_date: Optional[datetime] = None
-    end_date: Optional[datetime] = None
-    conditions: Optional[Dict[str, Any]] = None
-    is_active: Optional[bool] = None
-
-
 @dataclass
-class Campaign:
-    id: UUID
-    name: str
-    type: CampaignType
-    start_date: datetime
-    end_date: datetime
-    conditions: Dict[str, Any]
-    is_active: bool
-    created_at: datetime
+class Discount:
+    campaign_id: str
+    campaign_name: str
+    discount_amount: float
+
 
 @dataclass
 class DiscountRule:
@@ -64,3 +42,12 @@ class ComboRule:
     product_ids: List[str]
     discount_type: str
     discount_value: float
+
+
+@dataclass
+class Campaign:
+    name: str
+    campaign_type: CampaignType
+    rules: Union[DiscountRule, BuyNGetNRule, ComboRule]
+    id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    is_active: bool = True
