@@ -1,16 +1,16 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, List
 from uuid import UUID
 
 from pydantic import BaseModel, Field
 
 
+
 class CampaignType(Enum):
+    DISCOUNT = "discount"
     BUY_N_GET_N = "buy_n_get_n"
-    DISCOUNT_PRODUCT = "discount_product"
-    DISCOUNT_TOTAL = "discount_total"
     COMBO = "combo"
 
 
@@ -42,4 +42,25 @@ class Campaign:
     conditions: Dict[str, Any]
     is_active: bool
     created_at: datetime
-x
+
+@dataclass
+class DiscountRule:
+    discount_value: float
+    applies_to: str
+    product_ids: List[str] = field(default_factory=list)
+    min_amount: Optional[float] = None
+
+
+@dataclass
+class BuyNGetNRule:
+    buy_product_id: str
+    buy_quantity: int
+    get_product_id: str
+    get_quantity: int
+
+
+@dataclass
+class ComboRule:
+    product_ids: List[str]
+    discount_type: str
+    discount_value: float
