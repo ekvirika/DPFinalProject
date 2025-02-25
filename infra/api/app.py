@@ -6,15 +6,15 @@ from infra.api.routers.campaign_routes import router as campaign_router
 from infra.api.routers.product_routes import router as product_router
 from infra.api.routers.receipt_router import router as receipt_router
 from infra.api.routers.shift_router import router as shift_router
-from runner.dependencies import AppContainer, create_app_container
+from runner.dependencies import AppContainer, get_app_container
 
 app = FastAPI()
 
 
 @lru_cache()
-def get_app_container() -> AppContainer:
+def create_app_container() -> AppContainer:
     """Create and cache the application container."""
-    return create_app_container("pos.db")
+    return get_app_container("pos.db")
 
 
 # Include routers with prefixes and tags

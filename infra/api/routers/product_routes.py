@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends
 
 from core.services.product_service import ProductService
 from infra.repositories.product_sqlite_repository import SQLiteProductRepository
+from runner.dependencies import get_product_service
 
 
 @dataclass
@@ -35,8 +36,7 @@ class ErrorResponse:
     error: dict[str, str]
 
 
-def get_product_service() -> ProductService:
-    return ProductService(SQLiteProductRepository)
+
 
 
 router = APIRouter(prefix="/products", tags=["Products"])

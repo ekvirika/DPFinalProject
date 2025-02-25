@@ -46,13 +46,12 @@ class AppContainer:
 
 
 @lru_cache()
-def get_app_container() -> AppContainer:
+def get_app_container(db_path: str) -> AppContainer:
     """
     Creates and returns the application container.
     Uses lru_cache to ensure single instance.
     """
     # Determine database path
-    db_path = os.environ.get("DB_PATH", "pos.db")
 
     # Initialize database
     database = SQLiteDatabase(db_path)
