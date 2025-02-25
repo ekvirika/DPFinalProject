@@ -5,14 +5,14 @@ from core.models.product import Product
 
 
 class ProductRepository(Protocol):
-    def create(self, product: Product) -> Product:
+    def create(self, name: str, price: float) -> Product:
         pass
 
-    def get_by_id(self, id: UUID) -> Optional[Product]:
+    def get_by_id(self, product_id: str) -> Optional[Product]:
         pass
 
     def get_all(self) -> List[Product]:
         pass
 
-    def update(self, product_id: UUID, product: Product) -> Optional[Product]:
+    def update_price(self, product_id: str, price: float) -> Optional[Product]:
         pass

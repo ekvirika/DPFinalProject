@@ -25,13 +25,16 @@ class SQLiteDatabase:
 
     def init_db(self) -> None:
         with self.get_connection() as conn:
-            conn.executescript("""
-                CREATE TABLE IF NOT EXISTS products (
-                    id TEXT PRIMARY KEY,  -- UUID as TEXT
-                    name TEXT NOT NULL,
-                    price REAL NOT NULL,
-                );
+            cursor = conn.cursor()
 
+            cursor.execute('''
+                        CREATE TABLE IF NOT EXISTS products (
+                            id TEXT PRIMARY KEY,
+                            name TEXT NOT NULL,
+                            price REAL NOT NULL
+                        )
+                        ''')
+            conn.executescript("""
                 CREATE TABLE IF NOT EXISTS campaigns (
                     id TEXT PRIMARY KEY,  -- UUID as TEXT
                     type TEXT NOT NULL,
