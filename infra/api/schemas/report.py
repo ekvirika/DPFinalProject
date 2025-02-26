@@ -1,4 +1,5 @@
-from typing import Dict, List
+from typing import List, Dict
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -6,7 +7,7 @@ from infra.api.schemas.receipt import ItemSoldResponse, RevenueByCurrencyRespons
 
 
 class XReportResponse(BaseModel):
-    shift_id: str
+    shift_id: UUID
     receipt_count: int
     items_sold: List[ItemSoldResponse]
     revenue_by_currency: List[RevenueByCurrencyResponse]
