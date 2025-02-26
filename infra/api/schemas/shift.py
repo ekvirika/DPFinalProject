@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from pydantic import BaseModel
 
 
@@ -6,7 +8,7 @@ class ShiftCreate(BaseModel):
 
 
 class ShiftResponse(BaseModel):
-    id: str
+    id: UUID
     status: str
 
 

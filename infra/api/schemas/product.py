@@ -1,4 +1,5 @@
 from typing import List
+from uuid import UUID
 
 from pydantic import BaseModel
 
@@ -9,7 +10,7 @@ class ProductCreate(BaseModel):
 
 
 class ProductResponse(BaseModel):
-    id: str
+    id: UUID
     name: str
     price: float
 

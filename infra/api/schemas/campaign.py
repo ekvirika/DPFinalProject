@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Optional, Union
+from uuid import UUID
 from wsgiref.validate import validator
 
 from pydantic import BaseModel
@@ -20,7 +21,7 @@ class DiscountRuleModel(BaseModel):
 
 
 class BuyNGetNRuleModel(BaseModel):
-    buy_product_id: str
+    buy_product_id: UUID
     buy_quantity: int
     get_product_id: str
     get_quantity: int
@@ -65,7 +66,7 @@ class CampaignCreate(BaseModel):
 
 
 class CampaignResponse(BaseModel):
-    id: str
+    id: UUID
     name: str
     campaign_type: str
     rules: Dict[str, Any]
