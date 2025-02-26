@@ -5,6 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends
 from starlette import status
 
+from core.models.report import SalesReport, ShiftReport
 from core.services.report_service import ReportService
 from infra.api.schemas.report import SalesReportResponse, XReportResponse
 from runner.dependencies import get_report_service
@@ -14,8 +15,8 @@ router = APIRouter()
 
 @router.get("/x-reports", response_model=Dict[str, XReportResponse])
 def get_x_report(
-    shift_id: UUID, report_service: ReportService = Depends(get_report_service())
-) -> Dict[str, XReportResponse]:
+    shift_id: UUID, report_service: ReportService = Depends(get_report_service)
+) -> dict[str, ShiftReport]:
     report = report_service.generate_x_report(shift_id)
     if not report:
         raise HTTPException(
@@ -28,7 +29,8 @@ def get_x_report(
 
 @router.get("/sales", response_model=Dict[str, SalesReportResponse])
 def get_sales_report(
-    report_service: ReportService = Depends(get_report_service()),
-) -> Dict[str, SalesReportResponse]:
+    report_service: ReportService = Depends(get_report_service),
+) -> dict[str, SalesReport]:
     report = report_service.generate_sales_report()
     return {"sales": report}
+

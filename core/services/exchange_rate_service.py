@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Dict, Optional, cast
 from uuid import UUID
 
-import requests
+# import requests
 
 from core.models.receipt import Currency, Quote, Receipt
 from core.models.repositories.receipt_repository import ReceiptRepository

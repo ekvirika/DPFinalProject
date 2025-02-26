@@ -66,7 +66,7 @@ def get_app_container(db_path: str) -> AppContainer:
     # Initialize services
     exchange_service = ExchangeRateService()  # Removed receipt_repository argument
 
-    product_service = ProductService(product_repository=product_repository)  # Changed product_repo to product_repository
+    product_service = ProductService(product_repository=product_repository)
 
     campaign_service = CampaignService(
         campaign_repository=campaign_repository,  # Changed campaign_repo to campaign_repository
@@ -106,26 +106,29 @@ def get_app_container(db_path: str) -> AppContainer:
 
 
 # Convenience dependency provider functions
+DEFAULT_DB_PATH = "../infra/db/database.db"
+
+
 def get_receipt_service() -> ReceiptService:
-    container = get_app_container()
+    container = get_app_container(DEFAULT_DB_PATH)
     return container.receipt_service
 
 
 def get_product_service() -> ProductService:
-    container = get_app_container()
+    container = get_app_container(DEFAULT_DB_PATH)
     return container.product_service
 
 
 def get_campaign_service() -> CampaignService:
-    container = get_app_container()
+    container = get_app_container(DEFAULT_DB_PATH)
     return container.campaign_service
 
 
 def get_report_service() -> ReportService:
-    container = get_app_container()
+    container = get_app_container(DEFAULT_DB_PATH)
     return container.report_service
 
 
 def get_shift_service() -> ShiftService:
-    container = get_app_container()
+    container = get_app_container(DEFAULT_DB_PATH)
     return container.shift_service

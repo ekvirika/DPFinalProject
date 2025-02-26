@@ -6,7 +6,6 @@ from infra.api.routers.campaign_router import router as campaign_router
 from infra.api.routers.product_router import router as product_router
 from infra.api.routers.receipt_router import router as receipt_router
 from infra.api.routers.shift_router import router as shift_router
-from infra.api.routers.report_router import router as report_router
 from runner.dependencies import AppContainer, get_app_container
 
 app = FastAPI()
