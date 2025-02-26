@@ -1,4 +1,4 @@
-from typing import Optional, List, Union, Dict, Any
+from typing import Any, Dict, List, Optional, Union
 from wsgiref.validate import validator
 
 from pydantic import BaseModel
@@ -58,7 +58,9 @@ class CampaignCreate(BaseModel):
     @validator("campaign_type")
     def validate_campaign_type(cls, v):
         if v not in [ct.value for ct in CampaignType]:
-            raise ValueError(f"campaign_type must be one of {[ct.value for ct in CampaignType]}")
+            raise ValueError(
+                f"campaign_type must be one of {[ct.value for ct in CampaignType]}"
+            )
         return v
 
 

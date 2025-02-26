@@ -1,4 +1,5 @@
-from typing import Optional, List
+from typing import List, Optional
+from uuid import UUID
 
 from core.models.product import Product
 from infra.db.database import Database
@@ -15,24 +16,20 @@ class SQLiteProductRepository:
             cursor = conn.cursor()
             cursor.execute(
                 "INSERT INTO products (id, name, price) VALUES (?, ?, ?)",
-                (product.id, product.name, product.price)
+                (product.id, product.name, product.price),
             )
             conn.commit()
 
         return product
 
-    def get_by_id(self, product_id: str) -> Optional[Product]:
+    def get_by_id(self, product_id: UUID) -> Optional[Product]:
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM products WHERE id = ?", (product_id,))
             row = cursor.fetchone()
 
             if row:
-                return Product(
-                    id=row["id"],
-                    name=row["name"],
-                    price=row["price"]
-                )
+                return Product(id=row["id"], name=row["name"], price=row["price"])
 
             return None
 
@@ -43,20 +40,15 @@ class SQLiteProductRepository:
             rows = cursor.fetchall()
 
             return [
-                Product(
-                    id=row["id"],
-                    name=row["name"],
-                    price=row["price"]
-                )
+                Product(id=row["id"], name=row["name"], price=row["price"])
                 for row in rows
             ]
 
-    def update_price(self, product_id: str, price: float) -> Optional[Product]:
+    def update_price(self, product_id: UUID, price: float) -> Optional[Product]:
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "UPDATE products SET price = ? WHERE id = ?",
-                (price, product_id)
+                "UPDATE products SET price = ? WHERE id = ?", (price, product_id)
             )
             conn.commit()
 
