@@ -1,6 +1,8 @@
 import json
 import sqlite3
 from contextlib import contextmanager
+from multiprocessing.connection import Connection
+from typing import Any
 
 
 class Database:
@@ -9,7 +11,7 @@ class Database:
         self._create_tables()
 
     @contextmanager
-    def get_connection(self):
+    def get_connection(self) -> Connection:
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         try:
@@ -17,19 +19,19 @@ class Database:
         finally:
             conn.close()
 
-    def _create_tables(self):
+    def _create_tables(self) -> None:
         with self.get_connection() as conn:
             cursor = conn.cursor()
 
-            cursor.execute('''
+            cursor.execute("""
             CREATE TABLE IF NOT EXISTS products (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 price REAL NOT NULL
             )
-            ''')
+            """)
 
-            cursor.execute('''
+            cursor.execute("""
             CREATE TABLE IF NOT EXISTS campaigns (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
@@ -37,18 +39,18 @@ class Database:
                 rules TEXT NOT NULL,
                 is_active INTEGER NOT NULL DEFAULT 1
             )
-            ''')
+            """)
 
-            cursor.execute('''
+            cursor.execute("""
             CREATE TABLE IF NOT EXISTS shifts (
                 id TEXT PRIMARY KEY,
                 status TEXT NOT NULL,
                 created_at TIMESTAMP NOT NULL,
                 closed_at TIMESTAMP
             )
-            ''')
+            """)
 
-            cursor.execute('''
+            cursor.execute("""
             CREATE TABLE IF NOT EXISTS receipts (
                 id TEXT PRIMARY KEY,
                 shift_id TEXT NOT NULL,
@@ -58,9 +60,9 @@ class Database:
                 total REAL NOT NULL DEFAULT 0,
                 FOREIGN KEY (shift_id) REFERENCES shifts (id)
             )
-            ''')
+            """)
 
-            cursor.execute('''
+            cursor.execute("""
             CREATE TABLE IF NOT EXISTS receipt_items (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 receipt_id TEXT NOT NULL,
@@ -73,9 +75,9 @@ class Database:
                 FOREIGN KEY (receipt_id) REFERENCES receipts (id),
                 FOREIGN KEY (product_id) REFERENCES products (id)
             )
-            ''')
+            """)
 
-            cursor.execute('''
+            cursor.execute("""
             CREATE TABLE IF NOT EXISTS payments (
                 id TEXT PRIMARY KEY,
                 receipt_id TEXT NOT NULL,
@@ -86,16 +88,16 @@ class Database:
                 status TEXT NOT NULL,
                 FOREIGN KEY (receipt_id) REFERENCES receipts (id)
             )
-            ''')
+            """)
 
             conn.commit()
 
 
-def serialize_json(obj):
+def serialize_json(obj) -> str:
     return json.dumps(obj)
 
 
-def deserialize_json(json_str):
+def deserialize_json(json_str) -> Any | None:
     if not json_str:
         return None
     return json.loads(json_str)

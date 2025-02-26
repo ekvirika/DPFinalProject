@@ -1,9 +1,13 @@
-from locale import currency
+from typing import List, Optional, Tuple
 from uuid import UUID
-from typing import List, Dict, Optional, Tuple
-from fastapi import Depends
 
-from core.models.receipt import Receipt, ReceiptStatus, Payment, Currency, PaymentStatus, Quote
+from core.models.receipt import (
+    Currency,
+    Payment,
+    Quote,
+    Receipt,
+    ReceiptStatus,
+)
 from core.models.repositories.payment_repository import PaymentRepository
 from core.models.repositories.product_repository import ProductRepository
 from core.models.repositories.receipt_repository import ReceiptRepository
@@ -13,17 +17,15 @@ from core.services.discount_service import DiscountService
 from core.services.exchange_rate_service import ExchangeRateService
 
 
-
-
 class ReceiptService:
     def __init__(
-            self,
-            receipt_repository: ReceiptRepository,
-            product_repository: ProductRepository,
-            shift_repository: ShiftRepository,
-            discount_service: DiscountService,
-            exchange_service: ExchangeRateService,
-            payment_repository: PaymentRepository
+        self,
+        receipt_repository: ReceiptRepository,
+        product_repository: ProductRepository,
+        shift_repository: ShiftRepository,
+        discount_service: DiscountService,
+        exchange_service: ExchangeRateService,
+        payment_repository: PaymentRepository,
     ):
         self.receipt_repository = receipt_repository
         self.product_repository = product_repository
@@ -44,7 +46,9 @@ class ReceiptService:
         """Get a receipt by ID."""
         return self.receipt_repository.get(receipt_id)
 
-    def add_product(self, receipt_id: UUID, product_id: UUID, quantity: int) -> Optional[Receipt]:
+    def add_product(
+        self, receipt_id: UUID, product_id: UUID, quantity: int
+    ) -> Optional[Receipt]:
         """Add a product to a receipt with automatic discount application."""
         receipt = self.receipt_repository.get(receipt_id)
         if not receipt or receipt.status == ReceiptStatus.CLOSED:
@@ -69,12 +73,13 @@ class ReceiptService:
 
         return None
 
-    def calculate_payment_quote(self, receipt_id: UUID, currency : Currency) -> Optional[Quote]:
+    def calculate_payment_quote(
+        self, receipt_id: UUID, currency: Currency
+    ) -> Optional[Quote]:
         """Calculate payment quote for a receipt in a specific currency."""
         receipt = self.receipt_repository.get(receipt_id)
         if not receipt:
             return None
-
 
         quote = self.exchange_service.calculate_quote(receipt.id, currency)
         if quote:
@@ -82,15 +87,18 @@ class ReceiptService:
 
         return quote
 
-    def add_payment(self, receipt_id: UUID, amount: float, currency_name: str)\
-            -> Optional[Tuple[Payment, Receipt]]:
+    def add_payment(
+        self, receipt_id: UUID, amount: float, currency_name: str
+    ) -> Optional[Tuple[Payment, Receipt]]:
         """Add a payment to a receipt and close it if fully paid."""
         receipt = self.receipt_repository.get(receipt_id)
         if not receipt or receipt.status == ReceiptStatus.CLOSED:
             return None
 
         # Calculate the payment in GEL
-        rate = self.exchange_service.get_exchange_rate(Currency.value(currency_name), Currency.GEL)
+        rate = self.exchange_service.get_exchange_rate(
+            Currency.value(currency_name), Currency.GEL
+        )
 
         # Create a payment
         payment = self.payment_repository.create(
@@ -103,17 +111,19 @@ class ReceiptService:
         # Check if receipt is fully paid
         if updated_receipt:
             total_paid = sum(
-                p.payment_amount * self.exchange_service.get_exchange_rate(p.currency, Currency.GEL)
+                p.payment_amount
+                * self.exchange_service.get_exchange_rate(p.currency, Currency.GEL)
                 for p in updated_receipt.payments
             )
 
             if total_paid >= updated_receipt.total:
                 # Close the receipt
-                updated_receipt = self.receipt_repository.update_status(receipt_id, ReceiptStatus.CLOSED)
+                updated_receipt = self.receipt_repository.update_status(
+                    receipt_id, ReceiptStatus.CLOSED
+                )
 
         return payment, updated_receipt
 
     def get_receipts_by_shift(self, shift_id: UUID) -> List[Receipt]:
         """Get all receipts for a shift."""
         return self.receipt_repository.get_receipts_by_shift(shift_id)
-

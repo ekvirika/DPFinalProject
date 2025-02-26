@@ -3,8 +3,6 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import List
 
-from pydantic.v1 import UUID1
-
 
 class ReceiptStatus(Enum):
     OPEN = "open"
@@ -21,6 +19,7 @@ class PaymentStatus(Enum):
     PENDING = "pending"
     COMPLETED = "completed"
     FAILED = "failed"
+
 
 @dataclass
 class Discount:
@@ -40,7 +39,9 @@ class ReceiptItem:
 
     def __post_init__(self) -> None:
         self.total_price = self.unit_price * self.quantity
-        self.final_price = self.total_price - sum(d.discount_amount for d in self.discounts)
+        self.final_price = self.total_price - sum(
+            d.discount_amount for d in self.discounts
+        )
 
 
 @dataclass
@@ -57,7 +58,7 @@ class Payment:
 @dataclass
 class Receipt:
     shift_id: uuid.UUID
-    id: uuid.UUID = field(default_factory=lambda: str(uuid.uuid4()))
+    id: uuid.UUID = field(default_factory=lambda: uuid.uuid4())
     status: ReceiptStatus = ReceiptStatus.OPEN
     products: List[ReceiptItem] = field(default_factory=list)
     payments: List[Payment] = field(default_factory=list)
@@ -67,7 +68,9 @@ class Receipt:
 
     def recalculate_totals(self) -> None:
         self.subtotal = sum(item.total_price for item in self.products)
-        self.discount_amount = sum(sum(d.discount_amount for d in item.discounts) for item in self.products)
+        self.discount_amount = sum(
+            sum(d.discount_amount for d in item.discounts) for item in self.products
+        )
         self.total = self.subtotal - self.discount_amount
 
 
@@ -82,6 +85,7 @@ class ItemSold:
 class RevenueByCurrency:
     currency: Currency
     amount: float
+
 
 @dataclass
 class Quote:

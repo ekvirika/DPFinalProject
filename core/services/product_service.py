@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import List, Optional
 
 from core.models.product import Product
 from core.models.repositories.product_repository import ProductRepository

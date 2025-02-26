@@ -15,7 +15,9 @@ router = APIRouter(prefix="/shifts", tags=["Shifts"])
 
 
 @router.post("", response_model=ShiftResponse, status_code=201)
-def open_shift(shift_data: ShiftCreate, service: ShiftService = Depends(get_shift_service)):
+def open_shift(
+    shift_data: ShiftCreate, service: ShiftService = Depends(get_shift_service)
+):
     """Open a new shift for a cashier."""
     try:
         shift = service.open_shift(shift_data.cashier_id)

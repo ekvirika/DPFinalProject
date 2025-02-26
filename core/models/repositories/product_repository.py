@@ -1,8 +1,6 @@
 from typing import List, Optional, Protocol
 from uuid import UUID
 
-from pydantic.v1 import UUID3
-
 from core.models.product import Product
 
 

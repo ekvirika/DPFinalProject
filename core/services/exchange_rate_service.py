@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional, Dict, Any
+from typing import Any, Optional
 from uuid import UUID
 
 from fastapi import requests
@@ -8,7 +8,6 @@ from core.models.receipt import Currency, Quote
 
 
 class ExchangeRateService:
-
     rates_cache: dict[Any, Any]
 
     def __init__(self, receipt_repository) -> None:
@@ -17,16 +16,16 @@ class ExchangeRateService:
         self.rates_cache = {}
         self.last_update = None
 
-
     def _update_rates(self) -> None:
         """Update the exchange rates if needed (once per day)"""
         current_time = datetime.now()
 
         # If we haven't updated today or don't have rates yet
-        if (not self.last_update or
-                current_time.date() != self.last_update.date() or
-                not self.rates_cache):
-
+        if (
+            not self.last_update
+            or current_time.date() != self.last_update.date()
+            or not self.rates_cache
+        ):
             try:
                 response = requests.get(self.base_url)
                 data = response.json()
@@ -34,17 +33,18 @@ class ExchangeRateService:
                 if "rates" in data:
                     self.rates_cache = data["rates"]
                     self.last_update = current_time
-            except Exception as e:
+            except Exception:
                 # If API call fails, use hardcoded rates as fallback
                 self.rates_cache = {
                     "GEL": 1.0,
                     "USD": 0.37,  # Example rate
-                    "EUR": 0.34  # Example rate
+                    "EUR": 0.34,  # Example rate
                 }
                 self.last_update = current_time
 
-
-    def get_exchange_rate(self, from_currency: Currency, to_currency: Currency) -> float:
+    def get_exchange_rate(
+        self, from_currency: Currency, to_currency: Currency
+    ) -> float:
         """Get the exchange rate between two currencies"""
         self._update_rates()
 
@@ -62,12 +62,12 @@ class ExchangeRateService:
 
         return to_rate / from_rate
 
-
-    def convert(self, amount: float, from_currency: Currency, to_currency: Currency) -> float:
+    def convert(
+        self, amount: float, from_currency: Currency, to_currency: Currency
+    ) -> float:
         """Convert an amount from one currency to another"""
         rate = self.get_exchange_rate(from_currency, to_currency)
         return amount * rate
-
 
     def calculate_quote(self, receipt_id: UUID, currency: Currency) -> Optional[Quote]:
         """Calculate a payment quote for a receipt in the requested currency"""
@@ -85,5 +85,5 @@ class ExchangeRateService:
             requested_currency=currency,
             exchange_rate=exchange_rate,
             total_in_base_currency=receipt.total,
-            total_in_requested_currency=receipt.total * exchange_rate
+            total_in_requested_currency=receipt.total * exchange_rate,
         )
