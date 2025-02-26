@@ -154,7 +154,7 @@ class DiscountService:
         campaign: Campaign,
         receipt: Receipt,
         product_discounts: Dict[str, List[Discount]],
-    ):
+    ) -> None:
         """Apply combo campaign to a receipt."""
         rules = campaign.rules
         if isinstance(rules, ComboRule):

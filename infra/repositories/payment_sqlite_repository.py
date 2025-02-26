@@ -2,16 +2,17 @@ from typing import List, Optional
 from uuid import UUID
 
 from core.models.receipt import Currency, Payment, PaymentStatus
+from core.models.repositories.payment_repository import PaymentRepository
 from infra.db.database import Database
 
 
-class SQLitePaymentRepository:
+class SQLitePaymentRepository(PaymentRepository):
     def __init__(self, db: Database):
         self.db = db
 
     def create(
         self,
-        receipt_id: str,
+        receipt_id: UUID,
         amount: float,
         currency: Currency,
         total_in_gel: float,

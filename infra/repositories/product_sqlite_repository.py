@@ -2,10 +2,11 @@ from typing import List, Optional
 from uuid import UUID
 
 from core.models.product import Product
+from core.models.repositories.product_repository import ProductRepository
 from infra.db.database import Database
 
 
-class SQLiteProductRepository:
+class SQLiteProductRepository(ProductRepository):
     def __init__(self, db: Database):
         self.db = db
 

@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any, Union
 from uuid import UUID
 
 from core.models.campaign import (
@@ -8,14 +8,18 @@ from core.models.campaign import (
     ComboRule,
     DiscountRule,
 )
+from core.models.repositories.campaign_repository import CampaignRepository
 from infra.db.database import Database, deserialize_json, serialize_json
 
 
-class SQLiteCampaignRepository:
+class SQLiteCampaignRepository(CampaignRepository):
     def __init__(self, db: Database):
         self.db = db
 
-    def create(self, name: str, campaign_type: str, rules: Dict) -> Campaign:
+    def create(self, name: str, campaign_type: str, rules: Dict[str, Any]) -> Campaign:
+        # Define a Union type for rule_obj before assignment
+        rule_obj: Union[DiscountRule, BuyNGetNRule, ComboRule]
+
         if campaign_type == CampaignType.DISCOUNT.value:
             rule_obj = DiscountRule(**rules)
         elif campaign_type == CampaignType.BUY_N_GET_N.value:
@@ -55,6 +59,9 @@ class SQLiteCampaignRepository:
             if row:
                 rules_dict = deserialize_json(row["rules"])
 
+                # Define rule_obj with a Union type
+                rule_obj: Union[DiscountRule, BuyNGetNRule, ComboRule]
+
                 if row["campaign_type"] == CampaignType.DISCOUNT.value:
                     rule_obj = DiscountRule(**rules_dict)
                 elif row["campaign_type"] == CampaignType.BUY_N_GET_N.value:
@@ -83,6 +90,9 @@ class SQLiteCampaignRepository:
             campaigns = []
             for row in rows:
                 rules_dict = deserialize_json(row["rules"])
+
+                # Define rule_obj with a Union type
+                rule_obj: Union[DiscountRule, BuyNGetNRule, ComboRule]
 
                 if row["campaign_type"] == CampaignType.DISCOUNT.value:
                     rule_obj = DiscountRule(**rules_dict)
@@ -124,6 +134,9 @@ class SQLiteCampaignRepository:
             campaigns = []
             for row in rows:
                 rules_dict = deserialize_json(row["rules"])
+
+                # Define rule_obj with a Union type
+                rule_obj: Union[DiscountRule, BuyNGetNRule, ComboRule]
 
                 if row["campaign_type"] == CampaignType.DISCOUNT.value:
                     rule_obj = DiscountRule(**rules_dict)

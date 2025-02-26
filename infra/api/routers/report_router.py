@@ -1,0 +1,32 @@
+from http.client import HTTPException
+from typing import Dict
+from uuid import UUID
+
+from fastapi import APIRouter, Depends
+from starlette import status
+
+from core.services.report_service import ReportService
+from infra.api.schemas.report import XReportResponse, SalesReportResponse
+from runner.dependencies import get_report_service
+
+router = APIRouter()
+
+@router.get("/x-reports", response_model=Dict[str, XReportResponse])
+def get_x_report(shift_id: UUID,
+                report_service: ReportService = Depends(get_report_service())
+                 ) -> Dict[str, XReportResponse]:
+    report = report_service.generate_x_report(shift_id)
+    if not report:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Shift with ID '{shift_id}' not found"
+        )
+
+    return {"x-report": report}
+
+
+@router.get("/sales", response_model=Dict[str, SalesReportResponse])
+def get_sales_report(report_service: ReportService = Depends(get_report_service()))\
+        -> Dict[str, SalesReportResponse]:
+    report = report_service.generate_sales_report()
+    return {"sales": report}

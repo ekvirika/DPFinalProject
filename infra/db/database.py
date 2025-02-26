@@ -2,7 +2,7 @@ import json
 import sqlite3
 from contextlib import contextmanager
 from multiprocessing.connection import Connection
-from typing import Any
+from typing import Any, Generator
 
 
 class Database:
@@ -11,7 +11,11 @@ class Database:
         self._create_tables()
 
     @contextmanager
-    def get_connection(self) -> Connection:
+    def get_connection(self) -> Generator[sqlite3.Connection, Any, None]:
+        """
+        Yields a SQLite database connection.
+        The connection is automatically closed when the context manager exits.
+        """
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row
         try:
@@ -93,11 +97,9 @@ class Database:
             conn.commit()
 
 
-def serialize_json(obj) -> str:
+def serialize_json(obj: Any) -> str:
     return json.dumps(obj)
 
 
-def deserialize_json(json_str) -> Any | None:
-    if not json_str:
-        return None
+def deserialize_json(json_str: str) -> Any:
     return json.loads(json_str)

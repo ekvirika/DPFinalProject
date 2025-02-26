@@ -2,6 +2,7 @@ from typing import Dict, List, Any
 from uuid import UUID
 from sqlite3 import Connection
 
+
 from core.models.errors import ReceiptNotFoundError
 from core.models.receipt import (
     Currency,
@@ -50,8 +51,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
             cursor = conn.cursor()
 
             # Fetch receipt
-            cursor.execute("SELECT * FROM receipts "
-                           "WHERE id = ?", (receipt_id,))
+            cursor.execute("SELECT * FROM receipts WHERE id = ?", (receipt_id,))
             receipt_row = cursor.fetchone()
             if not receipt_row:
                 raise ReceiptNotFoundError(str(receipt_id))
@@ -67,8 +67,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
 
         # Get receipt items
         cursor.execute(
-            "SELECT * FROM receipt_items WHERE receipt_id = ?",
-            (receipt_id,)
+            "SELECT * FROM receipt_items WHERE receipt_id = ?", (receipt_id,)
         )
         item_rows = cursor.fetchall()
 
@@ -90,8 +89,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
             receipt.products.append(receipt_item)
 
         # Get payments
-        cursor.execute("SELECT * FROM payments WHERE receipt_id = ?",
-                       (receipt_id,))
+        cursor.execute("SELECT * FROM payments WHERE receipt_id = ?", (receipt_id,))
         payment_rows = cursor.fetchall()
 
         for payment_row in payment_rows:
@@ -115,7 +113,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
         product_id: UUID,
         quantity: int,
         unit_price: float,
-        discounts: List[Dict[str, float]],  # Add type arguments
+        discounts: List[Dict[str, Any]],  # Add type arguments
     ) -> Receipt:
         discount_objects = [Discount(**discount) for discount in discounts]
         receipt_item = ReceiptItem(
@@ -165,9 +163,12 @@ class SQLiteReceiptRepository(ReceiptRepository):
                 return receipt
 
             conn.rollback()
-            raise ReceiptNotFoundError(str(receipt_id))  # Add a return or raise statement
+            raise ReceiptNotFoundError(
+                str(receipt_id)
+            )  # Add a return or raise statement
 
-    def update_status(self, receipt_id: UUID, status: ReceiptStatus) -> Receipt:
+    def update_status(self, receipt_id: UUID, status: ReceiptStatus) \
+            -> Receipt:
         """Update the status of a receipt."""
         with self.database.get_connection() as conn:  # type: Connection
             cursor = conn.cursor()
@@ -179,6 +180,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
 
             if cursor.rowcount > 0:
                 return self.get(receipt_id)
+            raise ReceiptNotFoundError(str(receipt_id))
 
     def add_payment(self, receipt_id: UUID, payment: Payment) -> Receipt:
         with self.database.get_connection() as conn:  # type: Connection

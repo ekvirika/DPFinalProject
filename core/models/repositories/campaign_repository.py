@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Protocol
+from typing import Dict, List, Optional, Protocol, Any
 from uuid import UUID
 
 from core.models.campaign import Campaign, CampaignType
@@ -6,7 +6,7 @@ from core.models.campaign import Campaign, CampaignType
 
 class CampaignRepository(Protocol):
     def create(
-        self, name: str, campaign_type: CampaignType, rules: Dict
+        self, name: str, campaign_type: str, rules: Dict[str, Any]
     ) -> Campaign: ...
 
     def get_by_id(self, campaign_id: UUID) -> Optional[Campaign]: ...

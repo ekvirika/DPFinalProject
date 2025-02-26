@@ -1,12 +1,13 @@
 from datetime import datetime
 from typing import Optional
-from uuid import uuid4
+from uuid import uuid4, UUID
 
+from core.models.repositories.shift_repository import ShiftRepository
 from core.models.shift import Shift, ShiftStatus
 from infra.db.database import Database
 
 
-class SQLiteShiftRepository:
+class SQLiteShiftRepository(ShiftRepository):
     def __init__(self, db: Database):
         self.db = db
 
@@ -24,10 +25,10 @@ class SQLiteShiftRepository:
 
         return shift
 
-    def get_by_id(self, shift_id: str) -> Optional[Shift]:
+    def get_by_id(self, shift_id: UUID) -> Optional[Shift]:
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM shifts WHERE id = ?", (shift_id,))
+            cursor.execute("SELECT * FROM shifts WHERE id = ?", (str(shift_id),))
             row = cursor.fetchone()
 
             if row:
@@ -43,13 +44,13 @@ class SQLiteShiftRepository:
             return None
 
     def update_status(
-        self, shift_id: str, status: ShiftStatus, closed_at: Optional[datetime] = None
+        self, shift_id: UUID, status: ShiftStatus, closed_at: Optional[datetime] = None
     ) -> Optional[Shift]:
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE shifts SET status = ?, closed_at = ? WHERE id = ?",
-                (status.value, closed_at, shift_id),
+                (status.value, closed_at, str(shift_id)),
             )
             conn.commit()
 
