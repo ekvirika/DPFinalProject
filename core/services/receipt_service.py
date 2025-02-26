@@ -81,7 +81,7 @@ class ReceiptService:
         if not receipt:
             return None
 
-        quote = self.exchange_service.calculate_quote(receipt.id, currency)
+        quote = self.exchange_service.calculate_quote(receipt, currency)
         if quote:
             quote.receipt_id = receipt_id
 

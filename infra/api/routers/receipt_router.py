@@ -1,122 +1,117 @@
-from datetime import datetime
-from typing import List, Optional
+from typing import Dict, Any
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
-from pydantic import BaseModel, Field
+from fastapi import APIRouter, Depends, HTTPException
+from starlette import status
 
-from core.models.receipt import Currency
-from core.models.repositories.receipt_repository import ReceiptStatus
+from core.models.receipt import Currency, Receipt
 from core.services.receipt_service import ReceiptService
+from infra.api.schemas.receipt import (
+    PaymentCompleteResponse,
+    PaymentRequest,
+    PaymentResponse,
+    ProductAddRequest,
+    QuoteRequest,
+    QuoteResponse,
+    ReceiptCreate,
+    ReceiptResponse,
+)
 from runner.dependencies import get_receipt_service
 
-
-# --- Request Models ---
-class CreateReceiptRequest(BaseModel):
-    shift_id: UUID
-
-
-class AddItemRequest(BaseModel):
-    product_id: UUID
-    quantity: int = Field(..., gt=0)
-
-
-class PaymentQuoteRequest(BaseModel):
-    currency: Currency
-
-
-class PaymentRequest(BaseModel):
-    amount: float = Field(..., gt=0)
-    currency: Currency
-
-
-# --- Response Models ---
-class ReceiptItemResponse(BaseModel):
-    product_id: UUID
-    quantity: int
-    unit_price: float
-    discount: Optional[float] = None
-    campaign_id: Optional[int] = None
-
-
-class PaymentResponse(BaseModel):
-    amount: float
-    currency: Currency
-    exchange_rate: float
-    timestamp: datetime
-
-
-class ReceiptResponse(BaseModel):
-    id: UUID
-    shift_id: UUID
-    items: List[ReceiptItemResponse]
-    status: ReceiptStatus
-    created_at: datetime
-    total_amount: float
-    discount_amount: Optional[float] = None
-    payments: Optional[List[PaymentResponse]] = None
-
-
-class PaymentQuoteResponse(BaseModel):
-    amount: float
-    currency: Currency
-
-
-# --- Router Initialization ---
 router = APIRouter()
 
-
-# --- Endpoints ---
-@router.post("", status_code=status.HTTP_201_CREATED)
+@router.post("/receipts", response_model=Dict[str, ReceiptResponse], status_code=status.HTTP_201_CREATED)
 def create_receipt(
-    request: CreateReceiptRequest,
-    service: ReceiptService = Depends(get_receipt_service),
-) -> dict[str, ReceiptResponse]:
-    receipt = service.create_receipt(request.shift_id)
-    return {"receipt": ReceiptResponse.from_orm(receipt)}
+    receipt_data: ReceiptCreate,
+    receipt_service: ReceiptService = Depends(get_receipt_service)
+) -> dict[str, Receipt]:
+    new_receipt = receipt_service.create_receipt(receipt_data.shift_id)
+    if not new_receipt:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot create receipt. Shift with ID '{receipt_data.shift_id}' not found or closed"
+        )
+    return {"receipt": new_receipt}
 
-
-@router.post("/{receipt_id}/products")
-def add_item(
+@router.post("/receipts/{receipt_id}/products", response_model=Dict[str, ReceiptResponse])
+def add_product_to_receipt(
     receipt_id: UUID,
-    request: AddItemRequest,
-    service: ReceiptService = Depends(get_receipt_service),
-) -> dict[str, ReceiptResponse]:
-    receipt = service.add_item(receipt_id, request.product_id, request.quantity)
-    return {"receipt": ReceiptResponse.from_orm(receipt)}
+    product_data: ProductAddRequest,
+    receipt_service: ReceiptService = Depends(get_receipt_service)
+) -> dict[str, Receipt]:
+    updated_receipt = receipt_service.add_product(
+        receipt_id, product_data.product_id, product_data.quantity
+    )
+    if not updated_receipt:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Cannot add product. Receipt not found, closed, or product not found"
+        )
+    return {"receipt": updated_receipt}
 
-
-@router.post("/{receipt_id}/quotes")
-def calculate_payment(
+@router.post("/receipts/{receipt_id}/quotes", response_model=Dict[str, QuoteResponse])
+def calculate_payment_quote(
     receipt_id: UUID,
-    request: PaymentQuoteRequest,
-    service: ReceiptService = Depends(get_receipt_service),
-) -> dict[str, PaymentQuoteResponse]:
-    amount = service.calculate_payment(receipt_id, request.currency)
-    return {"quote": PaymentQuoteResponse(amount=amount, currency=request.currency)}
+    quote_data: QuoteRequest,
+    receipt_service: ReceiptService = Depends(get_receipt_service)
+) -> Dict[str, QuoteResponse]:
+    try:
+        quote = receipt_service.calculate_payment_quote(receipt_id, Currency(quote_data.currency))
+        if not quote:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Receipt with ID '{receipt_id}' not found"
+            )
+        return {"quote": quote}
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported currency. Supported currencies are: {[c.value for c in Currency]}",
+        )
 
-
-@router.post("/{receipt_id}/payments")
+@router.post("/receipts/{receipt_id}/payments", response_model=PaymentCompleteResponse)
 def add_payment(
     receipt_id: UUID,
-    request: PaymentRequest,
-    service: ReceiptService = Depends(get_receipt_service),
-) -> dict[str, ReceiptResponse]:
-    receipt = service.add_payment(receipt_id, request.amount, request.currency)
-    return {"receipt": ReceiptResponse.from_orm(receipt)}
+    payment_data: PaymentRequest,
+    receipt_service: ReceiptService = Depends(get_receipt_service)
+) -> PaymentCompleteResponse:
+    try:
+        result = receipt_service.add_payment(
+            receipt_id, payment_data.amount, Currency(payment_data.currency)
+        )
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Cannot add payment. Receipt with ID '{receipt_id}' not found or closed"
+            )
 
+        payment, updated_receipt = result
+        return PaymentCompleteResponse(
+            payment=PaymentResponse(
+                id=payment.id,
+                payment_amount=payment.payment_amount,
+                currency=payment.currency.value,
+                total_in_gel=payment.total_in_gel,
+                exchange_rate=payment.exchange_rate,
+                status=payment.status.value
+            ),
+            receipt=updated_receipt
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unsupported currency. Supported currencies are: {[c.value for c in Currency]}",
+        )
 
-@router.post("/{receipt_id}/close")
-def close_receipt(
-    receipt_id: UUID, service: ReceiptService = Depends(get_receipt_service)
-) -> dict[str, ReceiptResponse]:
-    receipt = service.close_receipt(receipt_id)
-    return {"receipt": ReceiptResponse.from_orm(receipt)}
-
-
-@router.get("")
-def get_shift_receipts(
-    shift_id: UUID, service: ReceiptService = Depends(get_receipt_service)
-) -> dict[str, List[ReceiptResponse]]:
-    receipts = service.get_shift_receipts(shift_id)
-    return {"receipts": [ReceiptResponse.from_orm(receipt) for receipt in receipts]}
+@router.get("/receipts/{receipt_id}", response_model=Dict[str, ReceiptResponse])
+def get_receipt(
+    receipt_id: UUID,
+    receipt_service: ReceiptService = Depends(get_receipt_service)
+) -> dict[str, Any]:
+    receipt = receipt_service.get_by_id(receipt_id)
+    if not receipt:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Receipt with ID '{receipt_id}' not found"
+        )
+    return {"receipt": receipt}

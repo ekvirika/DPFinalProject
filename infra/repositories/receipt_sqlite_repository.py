@@ -19,9 +19,8 @@ from infra.db.database import Database, deserialize_json, serialize_json
 
 
 class SQLiteReceiptRepository(ReceiptRepository):
-    def __init__(self, db: Database, product_repository: ProductRepository):
+    def __init__(self, db: Database):
         self.database = db
-        self.product_repository = product_repository
 
     def create(self, shift_id: UUID) -> Receipt:
         receipt = Receipt(shift_id)

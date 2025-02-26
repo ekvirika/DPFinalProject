@@ -1,16 +1,14 @@
-from typing import Dict, List
 from uuid import UUID
 
-from fastapi import Depends, FastAPI, APIRouter
+from fastapi import APIRouter, Depends
 
 from core.models.product import Product
 from core.services.product_service import ProductService
 from infra.api.schemas.product import ProductCreate, ProductUpdate
-from infra.db.database import Database
-from infra.repositories.product_sqlite_repository import SQLiteProductRepository
 from runner.dependencies import get_product_service
 
-router =  APIRouter()
+router = APIRouter()
+
 
 @router.post("/", response_model=dict, status_code=201)
 def create_product(
@@ -22,8 +20,9 @@ def create_product(
 
 
 @router.get("/", response_model=dict)
-def list_products(product_service: ProductService
-                  = Depends(get_product_service)) -> dict[str, list[Product]]:
+def list_products(
+    product_service: ProductService = Depends(get_product_service),
+) -> dict[str, list[Product]]:
     products = product_service.get_all_products()
     return {"products": products}
 

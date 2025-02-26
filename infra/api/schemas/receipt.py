@@ -52,17 +52,12 @@ class ReceiptResponse(BaseModel):
 
 class ProductAddRequest(BaseModel):
     product_id: UUID
-    quantity: int = Field(..., gt=0)
+    quantity: int
 
 
 class QuoteRequest(BaseModel):
     currency: Currency
 
-    @validator("currency")
-    def validate_currency(cls, v):
-        if v not in [c.value for c in Currency]:
-            raise ValueError(f"currency must be one of {[c.value for c in Currency]}")
-        return v
 
 
 class QuoteResponse(BaseModel):
@@ -77,18 +72,6 @@ class QuoteResponse(BaseModel):
 class PaymentRequest(BaseModel):
     amount: float
     currency: str
-
-    @validator("amount")
-    def amount_must_be_positive(cls, v):
-        if v <= 0:
-            raise ValueError("Amount must be greater than 0")
-        return v
-
-    @validator("currency")
-    def validate_currency(cls, v):
-        if v not in [c.value for c in Currency]:
-            raise ValueError(f"currency must be one of {[c.value for c in Currency]}")
-        return v
 
 
 class PaymentCompleteResponse(BaseModel):

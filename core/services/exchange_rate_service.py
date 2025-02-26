@@ -1,21 +1,20 @@
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Dict, Optional, cast
 from uuid import UUID
 
 import requests
 
-from core.models.receipt import Currency, Quote
+from core.models.receipt import Currency, Quote, Receipt
+from core.models.repositories.receipt_repository import ReceiptRepository
 
 
 class ExchangeRateService:
-    rates_cache: Dict[str, float]  # More specific type annotation
-    last_update: Optional[datetime]  # Add type annotation for last_update
+    """Service for handling currency exchange rates and conversions."""
 
-    def __init__(self, receipt_repository: Any) -> None:  # Add type for receipt_repository
-        self.receipt_repository = receipt_repository
+    def __init__(self) -> None:
         self.base_url = "https://api.exchangerate-api.com/v4/latest/GEL"
-        self.rates_cache = {}
-        self.last_update = None
+        self.rates_cache: Dict[str, float] = {}
+        self.last_update: Optional[datetime] = None
 
     def _update_rates(self) -> None:
         """Update the exchange rates if needed (once per day)"""
@@ -28,7 +27,7 @@ class ExchangeRateService:
                 or not self.rates_cache
         ):
             try:
-                response = requests.get(self.base_url)  # Fixed requests import
+                response = requests.get(self.base_url, timeout=10)
                 data = response.json()
 
                 if "rates" in data:
@@ -38,50 +37,46 @@ class ExchangeRateService:
                 # If API call fails, use hardcoded rates as fallback
                 self.rates_cache = {
                     "GEL": 1.0,
-                    "USD": 0.37,  # Example rate
-                    "EUR": 0.34,  # Example rate
+                    "USD": 0.37,
+                    "EUR": 0.34,
                 }
                 self.last_update = current_time
 
-    def get_exchange_rate(
-            self, from_currency: Currency, to_currency: Currency
-    ) -> float:
+    def get_exchange_rate(self, from_currency: Currency, to_currency: Currency) -> float:
         """Get the exchange rate between two currencies"""
         self._update_rates()
 
+        # Same currency, no conversion needed
+        if from_currency == to_currency:
+            return 1.0
+
         # GEL to X rate
         if from_currency == Currency.GEL:
-            return float(self.rates_cache.get(to_currency.value, 1.0))  # Explicit float return
+            return float(self.rates_cache.get(to_currency.value, 1.0))
 
         # X to GEL rate
         if to_currency == Currency.GEL:
-            return 1.0 / float(self.rates_cache.get(from_currency.value, 1.0))  # Explicit float return
+            from_rate = float(self.rates_cache.get(from_currency.value, 1.0))
+            return 1.0 / from_rate if from_rate != 0 else 1.0
 
         # X to Y rate (convert via GEL)
         from_rate = float(self.rates_cache.get(from_currency.value, 1.0))
         to_rate = float(self.rates_cache.get(to_currency.value, 1.0))
 
-        return to_rate / from_rate
+        return to_rate / from_rate if from_rate != 0 else to_rate
 
-    def convert(
-            self, amount: float, from_currency: Currency, to_currency: Currency
-    ) -> float:
+    def convert(self, amount: float, from_currency: Currency, to_currency: Currency) -> float:
         """Convert an amount from one currency to another"""
         rate = self.get_exchange_rate(from_currency, to_currency)
         return amount * rate
 
-    def calculate_quote(self, receipt_id: UUID, currency: Currency) -> Optional[Quote]:
+    def calculate_quote(self, receipt: Receipt, currency: Currency) -> Quote:
         """Calculate a payment quote for a receipt in the requested currency"""
-        receipt = self.receipt_repository.get_by_id(receipt_id)
-
-        if not receipt:
-            return None
-
         base_currency = Currency.GEL
         exchange_rate = self.get_exchange_rate(base_currency, currency)
 
         return Quote(
-            receipt_id=receipt_id,
+            receipt_id=receipt.id,
             base_currency=base_currency,
             requested_currency=currency,
             exchange_rate=exchange_rate,
