@@ -1,5 +1,6 @@
 from dataclasses import Field
 from typing import List
+from uuid import UUID
 from wsgiref.validate import validator
 
 from pydantic import BaseModel
@@ -8,17 +9,17 @@ from core.models.receipt import Currency
 
 
 class ReceiptCreate(BaseModel):
-    shift_id: str
+    shift_id: UUID
 
 
 class DiscountResponse(BaseModel):
-    campaign_id: str
+    campaign_id: UUID
     campaign_name: str
     discount_amount: float
 
 
 class ReceiptItemResponse(BaseModel):
-    product_id: str
+    product_id: UUID
     quantity: int
     unit_price: float
     total_price: float
@@ -27,7 +28,7 @@ class ReceiptItemResponse(BaseModel):
 
 
 class PaymentResponse(BaseModel):
-    id: str
+    id: UUID
     payment_amount: float
     currency: str
     total_in_gel: float
@@ -36,8 +37,8 @@ class PaymentResponse(BaseModel):
 
 
 class ReceiptResponse(BaseModel):
-    id: str
-    shift_id: str
+    id: UUID
+    shift_id: UUID
     status: str
     products: List[ReceiptItemResponse] = []
     payments: List[PaymentResponse] = []
@@ -50,12 +51,12 @@ class ReceiptResponse(BaseModel):
 
 
 class ProductAddRequest(BaseModel):
-    product_id: str
+    product_id: UUID
     quantity: int = Field(..., gt=0)
 
 
 class QuoteRequest(BaseModel):
-    currency: str
+    currency: Currency
 
     @validator("currency")
     def validate_currency(cls, v):
@@ -65,7 +66,7 @@ class QuoteRequest(BaseModel):
 
 
 class QuoteResponse(BaseModel):
-    receipt_id: str
+    receipt_id: UUID
     base_currency: str
     requested_currency: str
     exchange_rate: float
@@ -96,7 +97,7 @@ class PaymentCompleteResponse(BaseModel):
 
 
 class ItemSoldResponse(BaseModel):
-    product_id: str
+    product_id: UUID
     name: str
     quantity: int
 

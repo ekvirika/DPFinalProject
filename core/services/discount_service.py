@@ -1,4 +1,5 @@
 from typing import Dict, List, Any
+from uuid import UUID
 
 from core.models.campaign import CampaignType, Campaign, DiscountRule, BuyNGetNRule, ComboRule
 from core.models.receipt import Discount, Receipt
@@ -24,11 +25,11 @@ class DiscountService:
 
         # Apply product-specific discounts
         for campaign in active_campaigns:
-            if campaign.type == CampaignType.DISCOUNT:
+            if campaign.campaign_type == CampaignType.DISCOUNT:
                 self._apply_discount_campaign(campaign, receipt, product_discounts)
-            elif campaign.type == CampaignType.BUY_N_GET_N:
+            elif campaign.campaign_type == CampaignType.BUY_N_GET_N:
                 self._apply_buy_n_get_n_campaign(campaign, receipt, product_discounts)
-            elif campaign.type == CampaignType.COMBO:
+            elif campaign.campaign_type == CampaignType.COMBO:
                 self._apply_combo_campaign(campaign, receipt, product_discounts)
 
         # Update receipt items with the calculated discounts
@@ -44,7 +45,8 @@ class DiscountService:
 
     def _apply_discount_campaign(self, campaign: Campaign,
                                  receipt: Receipt,
-                                 product_discounts: Dict[str, List[Discount]]):
+                                 product_discounts: Dict[str, List[Discount]])\
+            -> None:
         """Apply discount campaign to a receipt."""
         rules = campaign
         if isinstance(rules, DiscountRule):
@@ -55,7 +57,7 @@ class DiscountService:
                         if item.product_id == product_id:
                             discount_amount = (item.unit_price * item.quantity) * (rules.discount_value / 100)
                             discount = Discount(
-                                campaign_id=campaign.id,
+                                campaign_id=UUID(campaign.id),
                                 campaign_name=campaign.name,
                                 discount_amount=discount_amount
                             )
@@ -73,7 +75,7 @@ class DiscountService:
                         item_discount = total_discount * item_proportion
 
                         discount = Discount(
-                            campaign_id=campaign.id,
+                            campaign_id=UUID(campaign.id),
                             campaign_name=campaign.name,
                             discount_amount=item_discount
                         )
@@ -83,7 +85,7 @@ class DiscountService:
     def _apply_buy_n_get_n_campaign(self, campaign: Campaign, receipt: Receipt,
                                     product_discounts: Dict[str, List[Discount]]) -> None:
         """Apply buy N get N campaign to a receipt."""
-        rules = campaign.conditions
+        rules = campaign.rules
         if isinstance(rules, BuyNGetNRule):
             # Count how many of the "buy" product are in the receipt
             buy_quantity = 0
@@ -106,7 +108,7 @@ class DiscountService:
                             if actual_free > 0:
                                 discount_amount = item.unit_price * actual_free
                                 discount = Discount(
-                                    campaign_id=campaign.id,
+                                    campaign_id=UUID(campaign.id),
                                     campaign_name=campaign.name,
                                     discount_amount=discount_amount
                                 )
@@ -121,7 +123,7 @@ class DiscountService:
                             if actual_free > 0:
                                 discount_amount = item.unit_price * actual_free
                                 discount = Discount(
-                                    campaign_id=campaign.id,
+                                    campaign_id=UUID(campaign.id),
                                     campaign_name=campaign.name,
                                     discount_amount=discount_amount
                                 )
@@ -133,7 +135,7 @@ class DiscountService:
                               receipt: Receipt,
                               product_discounts: Dict[str, List[Discount]]):
         """Apply combo campaign to a receipt."""
-        rules = campaign.conditions
+        rules = campaign.rules
         if isinstance(rules, ComboRule):
             # Check if all required products are in the receipt
             all_products_present = True
@@ -160,7 +162,7 @@ class DiscountService:
                                 discount_amount = rules.discount_value / len(rules.product_ids)
 
                             discount = Discount(
-                                campaign_id=campaign.id,
+                                campaign_id=UUID(campaign.id),
                                 campaign_name=campaign.name,
                                 discount_amount=discount_amount
                             )

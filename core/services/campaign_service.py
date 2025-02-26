@@ -23,7 +23,6 @@ class CampaignService:
             type=campaign_type_enum,
             is_active=True,
             conditions=rules,
-            created_at=datetime.now(),
         )
 
         return self.campaign_repository.create(campaign)

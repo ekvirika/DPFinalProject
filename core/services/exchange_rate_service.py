@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Optional, Dict, Any
 from uuid import UUID
 
 from fastapi import requests
@@ -8,6 +8,8 @@ from core.models.receipt import Currency, Quote
 
 
 class ExchangeRateService:
+
+    rates_cache: dict[Any, Any]
 
     def __init__(self, receipt_repository) -> None:
         self.receipt_repository = receipt_repository

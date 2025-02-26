@@ -1,35 +1,19 @@
-# core/repositories/shift_repository.py
-from typing import List, Optional, Protocol
-from uuid import UUID
+from datetime import datetime
+from typing import Protocol, Optional
 
-from core.models.shift import Shift, ShiftReport
+from core.models.shift import Shift, ShiftStatus
 
 
 class ShiftRepository(Protocol):
-    def create(self, cashier_id: str) -> Shift:
-        """Create a new shift for a cashier."""
-        pass
+    def create(self) -> Shift:
+        ...
 
-    def get_by_id(self, shift_id: UUID) -> Optional[Shift]:
-        """Retrieve a shift by its ID."""
-        pass
+    def get_by_id(self, shift_id: str) -> Optional[Shift]:
+        ...
 
-    def get_all(self) -> List[Shift]:
-        """Retrieve all shifts."""
-        pass
+    def update_status(self, shift_id: str, status: ShiftStatus,
+                      closed_at: Optional[datetime] = None) -> Optional[Shift]:
+        ...
 
-    def close(self, shift_id: UUID) -> Optional[Shift]:
-        """Close an open shift."""
-        pass
-
-    def get_open_shift_by_cashier(self, cashier_id: str) -> Optional[Shift]:
-        """Get open shift for a cashier if exists."""
-        pass
-
-    def get_x_report(self, shift_id: UUID) -> Optional[ShiftReport]:
-        """Generate X report for a shift without closing it."""
-        pass
-
-    def get_z_report(self, shift_id: UUID) -> Optional[ShiftReport]:
-        """Generate Z report and close the shift."""
-        pass
+    def get_current_open(self) -> Optional[Shift]:
+        ...

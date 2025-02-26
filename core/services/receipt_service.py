@@ -1,3 +1,4 @@
+from locale import currency
 from uuid import UUID
 from typing import List, Dict, Optional, Tuple
 from fastapi import Depends
@@ -68,19 +69,20 @@ class ReceiptService:
 
         return None
 
-    def calculate_payment_quote(self, receipt_id: UUID, currency: Currency) -> Optional[Quote]:
+    def calculate_payment_quote(self, receipt_id: UUID, currency : Currency) -> Optional[Quote]:
         """Calculate payment quote for a receipt in a specific currency."""
         receipt = self.receipt_repository.get(receipt_id)
         if not receipt:
             return None
 
-        quote = self.exchange_service.calculate_quote(str(receipt.total), currency)
+
+        quote = self.exchange_service.calculate_quote(receipt.id, currency)
         if quote:
             quote.receipt_id = receipt_id
 
         return quote
 
-    def add_payment(self, receipt_id: UUID, amount: float, currency: Currency)\
+    def add_payment(self, receipt_id: UUID, amount: float, currency_name: str)\
             -> Optional[Tuple[Payment, Receipt]]:
         """Add a payment to a receipt and close it if fully paid."""
         receipt = self.receipt_repository.get(receipt_id)
@@ -88,11 +90,11 @@ class ReceiptService:
             return None
 
         # Calculate the payment in GEL
-        rate = self.exchange_service.get_exchange_rate(currency, Currency.GEL)
+        rate = self.exchange_service.get_exchange_rate(Currency.value(currency_name), Currency.GEL)
 
         # Create a payment
         payment = self.payment_repository.create(
-            str(receipt_id), amount, currency, receipt.total, rate
+            str(receipt_id), amount, currency_name, receipt.total, rate
         )
 
         # Add payment to receipt
