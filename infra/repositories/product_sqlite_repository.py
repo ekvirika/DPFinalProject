@@ -26,7 +26,7 @@ class SQLiteProductRepository(ProductRepository):
     def get_by_id(self, product_id: UUID) -> Optional[Product]:
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM products WHERE id = ?", (product_id,))
+            cursor.execute("SELECT * FROM products WHERE id = ?", (str(product_id),))
             row = cursor.fetchone()
 
             if row:
@@ -49,7 +49,7 @@ class SQLiteProductRepository(ProductRepository):
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "UPDATE products SET price = ? WHERE id = ?", (price, product_id)
+                "UPDATE products SET price = ? WHERE id = ?", (price, str(product_id))
             )
             conn.commit()
 
