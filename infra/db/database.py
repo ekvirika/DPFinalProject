@@ -1,7 +1,6 @@
 import json
 import sqlite3
 from contextlib import contextmanager
-from multiprocessing.connection import Connection
 from typing import Any, Generator
 
 

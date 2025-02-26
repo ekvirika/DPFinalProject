@@ -5,12 +5,11 @@ Dependency injection container and provider functions.
 from dataclasses import dataclass
 from functools import lru_cache
 
-from pandas.io.sql import SQLiteDatabase
-
 from core.models.repositories.campaign_repository import CampaignRepository
 from core.models.repositories.product_repository import ProductRepository
 from core.models.repositories.receipt_repository import ReceiptRepository
 from core.models.repositories.shift_repository import ShiftRepository
+from core.services import discount_service
 from core.services.campaign_service import CampaignService
 from core.services.exchange_rate_service import ExchangeRateService
 from core.services.product_service import ProductService
@@ -19,8 +18,10 @@ from core.services.report_service import ReportService
 from core.services.shift_service import ShiftService
 from infra.db.database import Database
 from infra.repositories.campaign_sqlite_repository import SQLiteCampaignRepository
+from infra.repositories.payment_sqlite_repository import SQLitePaymentRepository
 from infra.repositories.product_sqlite_repository import SQLiteProductRepository
 from infra.repositories.receipt_sqlite_repository import SQLiteReceiptRepository
+from infra.repositories.report_sqlite_repository import SQLiteReportRepository
 from infra.repositories.shift_sqlite_repository import SQLiteShiftRepository
 
 
@@ -54,13 +55,15 @@ def get_app_container(db_path: str) -> AppContainer:
     # Determine database path
 
     # Initialize database
-    database = SQLiteDatabase(db_path)
+    database = Database(db_path)
 
     # Initialize repositories
     receipt_repository = SQLiteReceiptRepository(database)
     product_repository = SQLiteProductRepository(database)
     campaign_repository = SQLiteCampaignRepository(database)
     shift_repository = SQLiteShiftRepository(database)
+    payment_repository = SQLitePaymentRepository(database)
+    report_repository = SQLiteReportRepository(database)
 
     # Initialize services
     exchange_service = ExchangeRateService()
@@ -71,18 +74,17 @@ def get_app_container(db_path: str) -> AppContainer:
         campaign_repo=campaign_repository, product_repo=product_repository
     )
 
-    shift_service = ShiftService(shift_repo=shift_repository)
+    shift_service = ShiftService(shift_repository)
 
-    receipt_service = ReceiptService(
-        receipt_repo=receipt_repository,
-        exchange_service=exchange_service,
-        campaign_service=campaign_service,
-        product_service=product_service,
-    )
+    receipt_service = ReceiptService(receipt_repository,
+                                     product_repository,
+                                     shift_repository,
+                                     discount_service,
+                                     exchange_service,
+                                     payment_repository
+                                     )
 
-    report_service = ReportService(
-        receipt_repo=receipt_repository, shift_repo=shift_repository
-    )
+    report_service = ReportService(report_repository, shift_repository)
 
     return AppContainer(
         db=database,

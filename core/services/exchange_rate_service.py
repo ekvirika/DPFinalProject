@@ -1,16 +1,17 @@
 from datetime import datetime
-from typing import Any, Optional
+from typing import Any, Dict, Optional
 from uuid import UUID
 
-from fastapi import requests
+import requests
 
 from core.models.receipt import Currency, Quote
 
 
 class ExchangeRateService:
-    rates_cache: dict[Any, Any]
+    rates_cache: Dict[str, float]  # More specific type annotation
+    last_update: Optional[datetime]  # Add type annotation for last_update
 
-    def __init__(self, receipt_repository) -> None:
+    def __init__(self, receipt_repository: Any) -> None:  # Add type for receipt_repository
         self.receipt_repository = receipt_repository
         self.base_url = "https://api.exchangerate-api.com/v4/latest/GEL"
         self.rates_cache = {}
@@ -22,12 +23,12 @@ class ExchangeRateService:
 
         # If we haven't updated today or don't have rates yet
         if (
-            not self.last_update
-            or current_time.date() != self.last_update.date()
-            or not self.rates_cache
+                not self.last_update
+                or current_time.date() != self.last_update.date()
+                or not self.rates_cache
         ):
             try:
-                response = requests.get(self.base_url)
+                response = requests.get(self.base_url)  # Fixed requests import
                 data = response.json()
 
                 if "rates" in data:
@@ -43,27 +44,27 @@ class ExchangeRateService:
                 self.last_update = current_time
 
     def get_exchange_rate(
-        self, from_currency: Currency, to_currency: Currency
+            self, from_currency: Currency, to_currency: Currency
     ) -> float:
         """Get the exchange rate between two currencies"""
         self._update_rates()
 
         # GEL to X rate
         if from_currency == Currency.GEL:
-            return self.rates_cache.get(to_currency.value, 1.0)
+            return float(self.rates_cache.get(to_currency.value, 1.0))  # Explicit float return
 
         # X to GEL rate
         if to_currency == Currency.GEL:
-            return 1.0 / self.rates_cache.get(from_currency.value, 1.0)
+            return 1.0 / float(self.rates_cache.get(from_currency.value, 1.0))  # Explicit float return
 
         # X to Y rate (convert via GEL)
-        from_rate = self.rates_cache.get(from_currency.value, 1.0)
-        to_rate = self.rates_cache.get(to_currency.value, 1.0)
+        from_rate = float(self.rates_cache.get(from_currency.value, 1.0))
+        to_rate = float(self.rates_cache.get(to_currency.value, 1.0))
 
         return to_rate / from_rate
 
     def convert(
-        self, amount: float, from_currency: Currency, to_currency: Currency
+            self, amount: float, from_currency: Currency, to_currency: Currency
     ) -> float:
         """Convert an amount from one currency to another"""
         rate = self.get_exchange_rate(from_currency, to_currency)

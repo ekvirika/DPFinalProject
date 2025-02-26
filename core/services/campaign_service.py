@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict, List, Union, Any
 from uuid import UUID, uuid4
 
 from core.models.campaign import Campaign, CampaignType
@@ -17,20 +17,11 @@ class CampaignService:
         self.product_repository = product_repository
 
     def create_campaign(
-        self, name: str, campaign_type: str, rules: Dict[str, int]
+        self, name: str, campaign_type: str, rules: Dict[str, Any]
     ) -> Campaign:
         self._validate_campaign_data(name, campaign_type, rules)
         campaign_type_enum = CampaignType(campaign_type)
-
-        campaign = Campaign(
-            id=uuid4(),
-            name=name,
-            type=campaign_type_enum,
-            is_active=True,
-            conditions=rules,
-        )
-
-        return self.campaign_repository.create(campaign)
+        return self.campaign_repository.create(name, campaign_type, rules)  # Pass the required arguments
 
     def get_campaign(self, campaign_id: UUID) -> Campaign:
         campaign = self.campaign_repository.get_by_id(campaign_id)
@@ -48,7 +39,7 @@ class CampaignService:
         self.campaign_repository.deactivate(campaign_id)
 
     def _validate_campaign_data(
-        self, name: str, campaign_type: str, rules: Dict[str, int]
+        self, name: str, campaign_type: str, rules: Dict[str, Any]
     ) -> None:
         if not name:
             raise CampaignValidationError("Campaign name cannot be empty")
@@ -58,7 +49,7 @@ class CampaignService:
 
         self._validate_rules(campaign_type, rules)
 
-    def _validate_rules(self, campaign_type: str, rules: Dict[str, int]) -> None:
+    def _validate_rules(self, campaign_type: str, rules: Dict[str, Any]) -> None:
         if campaign_type == CampaignType.BUY_N_GET_N.value:
             required_fields = [
                 "buy_product_id",
@@ -73,7 +64,7 @@ class CampaignService:
         elif campaign_type == CampaignType.DISCOUNT.value:
             required_fields = ["applies_to", "discount_percentage"]
             self._validate_required_fields(rules, required_fields)
-            if rules["applies_to"] == "product" and "product_ids" in rules:
+            if rules["applies_to"] == "product" and "product_ids" in rules:  # Make sure types match
                 self._validate_product_existence(rules["product_ids"])
         elif campaign_type == CampaignType.COMBO.value:
             required_fields = ["product_ids", "discount_percentage"]
@@ -81,14 +72,12 @@ class CampaignService:
             self._validate_product_existence(rules["product_ids"])
 
     def _validate_required_fields(
-        self, rules: Dict[str, int], required_fields: List[str]
+        self, rules: Dict[str, Any], required_fields: List[str]
     ) -> None:
         missing_fields = [field for field in required_fields if field not in rules]
         if missing_fields:
             raise CampaignValidationError(
-                f"Missing required fields for "
-                f"{rules['campaign_type']} campaign: "
-                f"{', '.join(missing_fields)}"
+                f"Missing required fields for campaign: {', '.join(missing_fields)}"
             )
 
     def _validate_product_existence(self, product_ids: List[UUID]) -> None:

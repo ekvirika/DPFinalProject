@@ -1,4 +1,5 @@
 from typing import Dict, List
+from uuid import UUID
 
 from fastapi import Depends, FastAPI, APIRouter
 
@@ -29,7 +30,7 @@ def list_products(product_service: ProductService
 
 @router.patch("/{product_id}", response_model=dict)
 def update_product(
-    product_id: str,
+    product_id: UUID,
     product_data: ProductUpdate,
     product_service: ProductService = Depends(get_product_service),
 ) -> dict[str, Product | None]:

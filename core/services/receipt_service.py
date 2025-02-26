@@ -54,7 +54,7 @@ class ReceiptService:
         if not receipt or receipt.status == ReceiptStatus.CLOSED:
             return None
 
-        product = self.product_repository.get_by_id(str(product_id))
+        product = self.product_repository.get_by_id(product_id)
         if not product:
             return None
 
@@ -88,21 +88,29 @@ class ReceiptService:
         return quote
 
     def add_payment(
-        self, receipt_id: UUID, amount: float, currency_name: str
+            self, receipt_id: UUID, amount: float, currency_name: str
     ) -> Optional[Tuple[Payment, Receipt]]:
         """Add a payment to a receipt and close it if fully paid."""
+
+        # Ensure receipt_id is UUID
+        receipt_id = UUID(receipt_id) if isinstance(receipt_id, str) else receipt_id
+
         receipt = self.receipt_repository.get(receipt_id)
         if not receipt or receipt.status == ReceiptStatus.CLOSED:
             return None
 
+        # Convert currency_name (str) to Currency enum
+        try:
+            currency = Currency[currency_name]
+        except KeyError:
+            return None  # Handle invalid currency input
+
         # Calculate the payment in GEL
-        rate = self.exchange_service.get_exchange_rate(
-            Currency.value(currency_name), Currency.GEL
-        )
+        rate = self.exchange_service.get_exchange_rate(currency, Currency.GEL)
 
         # Create a payment
         payment = self.payment_repository.create(
-            str(receipt_id), amount, currency_name, receipt.total, rate
+            receipt_id, amount, currency, receipt.total, rate
         )
 
         # Add payment to receipt

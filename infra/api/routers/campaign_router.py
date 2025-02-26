@@ -6,27 +6,10 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 
 from core.services.campaign_service import CampaignService
+from infra.api.schemas.campaign import CampaignCreate, CampaignResponse
 from runner.dependencies import get_campaign_service
 
 router = APIRouter()
-
-
-class CampaignCreate(BaseModel):
-    name: str
-    campaign_type: str
-    start_date: datetime
-    end_date: datetime
-    rules: dict[str, int]
-
-
-class CampaignResponse(BaseModel):
-    id: UUID
-    name: str
-    campaign_type: str
-    start_date: datetime
-    end_date: datetime
-    is_active: bool
-    rules: dict[str, int]
 
 
 @router.post("/", response_model=CampaignResponse)
