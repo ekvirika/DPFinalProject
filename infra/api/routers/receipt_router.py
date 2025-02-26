@@ -5,7 +5,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
 
-from core.models.repositories.payment_repository import PaymentCurrency
+from core.models.receipt import Currency
 from core.models.repositories.receipt_repository import ReceiptStatus
 from core.services.receipt_service import ReceiptService
 from runner.dependencies import get_receipt_service
@@ -22,12 +22,12 @@ class AddItemRequest(BaseModel):
 
 
 class PaymentQuoteRequest(BaseModel):
-    currency: PaymentCurrency
+    currency: Currency
 
 
 class PaymentRequest(BaseModel):
     amount: float = Field(..., gt=0)
-    currency: PaymentCurrency
+    currency: Currency
 
 
 # --- Response Models ---
@@ -41,7 +41,7 @@ class ReceiptItemResponse(BaseModel):
 
 class PaymentResponse(BaseModel):
     amount: float
-    currency: PaymentCurrency
+    currency: Currency
     exchange_rate: float
     timestamp: datetime
 
@@ -59,7 +59,7 @@ class ReceiptResponse(BaseModel):
 
 class PaymentQuoteResponse(BaseModel):
     amount: float
-    currency: PaymentCurrency
+    currency: Currency
 
 
 # --- Router Initialization ---
