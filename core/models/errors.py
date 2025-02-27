@@ -10,7 +10,6 @@ class POSException(HTTPException):
         )
 
 
-# 🧾 Receipt Errors
 class ReceiptNotFoundError(POSException):
     def __init__(self, receipt_id: str) -> None:
         super().__init__(
@@ -38,7 +37,6 @@ class InsufficientPaymentError(POSException):
         )
 
 
-# 🛍️ Product Errors
 class ProductNotFoundError(POSException):
     def __init__(self, product_id: str) -> None:
         super().__init__(
@@ -48,7 +46,6 @@ class ProductNotFoundError(POSException):
         )
 
 
-# 💱 Exchange Rate Errors
 class ExchangeRateNotFoundError(POSException):
     def __init__(self, from_currency: str, to_currency: str) -> None:
         super().__init__(
@@ -121,7 +118,7 @@ class InvalidCampaignRulesException(HTTPException):
 class ShiftNotFoundError(POSException):
     def __init__(self, shift_id: str):
         super().__init__(
-            detail=f"Campaign with id {shift_id} not found",
+            detail=f"Shift with id {shift_id} not found",
             status_code=status.HTTP_404_NOT_FOUND,
             error_code="SHIFT_NOT_FOUND",
         )

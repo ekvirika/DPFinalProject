@@ -6,23 +6,20 @@ from starlette import status
 
 from core.models.report import SalesReport, ShiftReport
 from core.services.report_service import ReportService
+from core.services.shift_service import ShiftService
 from infra.api.schemas.report import SalesReportResponse, XReportResponse
-from runner.dependencies import get_report_service
+from runner.dependencies import get_report_service, get_shift_service
 
 router = APIRouter()
 
 
 @router.get("/x-reports", response_model=Dict[str, XReportResponse])
 def get_x_report(
-    shift_id: UUID, report_service: ReportService = Depends(get_report_service)
+    shift_id: UUID,
+        report_service: ReportService = Depends(get_report_service),
+        shift_service: ShiftService = Depends(get_shift_service)
 ) -> dict[str, ShiftReport]:
-    report = report_service.generate_x_report(shift_id)
-    if not report:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Shift with ID '{shift_id}' not found",
-        )
-
+    report = report_service.generate_x_report(shift_id, shift_service)
     return {"x-report": report}
 
 

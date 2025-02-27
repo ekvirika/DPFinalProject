@@ -1,6 +1,7 @@
 from typing import List, Optional, Tuple
 from uuid import UUID, uuid4
 
+from core.models.errors import ShiftNotFoundError
 from core.models.receipt import (
     Currency,
     Payment,
@@ -175,7 +176,9 @@ class ReceiptService:
 
         return payment, updated_receipt
 
-    def get_receipts_by_shift(self, shift_id: UUID) -> List[Receipt]:
+    def get_receipts_by_shift(self, shift_id: UUID, shift: ShiftRepository) -> List[Receipt]:
         """Get all receipts for a shift."""
+        if shift.get_by_id(shift_id) is None:
+            raise ShiftNotFoundError(str(shift_id))
         return self.receipt_repository.get_receipts_by_shift(shift_id)
 
