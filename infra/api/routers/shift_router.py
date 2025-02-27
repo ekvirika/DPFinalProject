@@ -27,18 +27,5 @@ def close_shift(
     shift_update: ShiftUpdate,
     shift_service: ShiftService = Depends(get_shift_service),  # Injecting service
 ) -> dict[str, Shift]:
-    print(shift_update)
-    if shift_update.status != ShiftStatus.CLOSED.value:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only closing shifts is supported",
-        )
-
-    updated_shift = shift_service.close_shift(shift_id)
-    if not updated_shift:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Shift with ID '{shift_id}' not found or already closed",
-        )
-
+    updated_shift = shift_service.close_shift(shift_id, shift_update)
     return {"shift": updated_shift}

@@ -4,6 +4,7 @@ from uuid import UUID
 
 from core.models.repositories.shift_repository import ShiftRepository
 from core.models.shift import Shift, ShiftStatus
+from infra.api.schemas.shift import ShiftUpdate
 
 
 class ShiftService:
@@ -14,14 +15,10 @@ class ShiftService:
         """Open a new shift."""
         return self.shift_repository.create()
 
-    def close_shift(self, shift_id: UUID) -> Optional[Shift]:
+    def close_shift(self, shift_id: UUID, shift_update: ShiftUpdate) -> Optional[Shift]:
         """Close an open shift."""
-        shift = self.shift_repository.get_by_id(shift_id)
-        if not shift or shift.status == ShiftStatus.CLOSED:
-            return None
-
         now = datetime.now()
-        return self.shift_repository.update_status(shift_id, ShiftStatus.CLOSED, now)
+        return self.shift_repository.update_status(shift_id, shift_update, now)
 
     def get_shift(self, shift_id: UUID) -> Optional[Shift]:
         """Get a shift by ID."""

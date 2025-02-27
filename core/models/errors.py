@@ -116,3 +116,30 @@ class InvalidCampaignRulesException(HTTPException):
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=message,
         )
+
+
+class ShiftNotFoundError(POSException):
+    def __init__(self, shift_id: str):
+        super().__init__(
+            detail=f"Campaign with id {shift_id} not found",
+            status_code=status.HTTP_404_NOT_FOUND,
+            error_code="SHIFT_NOT_FOUND",
+        )
+
+
+class ShiftStatusError(POSException):
+    def __init__(self):
+        super().__init__(
+            detail="Shift is already closed",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            error_code="SHIFT_IS_CLOSED",
+        )
+
+
+class ShiftStatusValueError(POSException):
+    def __init__(self):
+        super().__init__(
+            detail="Invalid status. Must be 'closed'",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            error_code="INVALID_STATUS",
+        )
