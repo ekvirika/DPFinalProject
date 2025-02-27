@@ -86,7 +86,6 @@ class CampaignDatabaseError(POSException):
         )
 
 
-
 class CampaignNotFoundException(HTTPException):
     def __init__(self, campaign_id):
         super().__init__(

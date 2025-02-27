@@ -4,6 +4,7 @@ from uuid import UUID, uuid4
 from core.models.product import Product
 from core.models.repositories.product_repository import ProductRepository
 from infra.db.database import Database
+from core.models.errors import ProductNotFoundError
 
 
 class SQLiteProductRepository(ProductRepository):
@@ -29,10 +30,9 @@ class SQLiteProductRepository(ProductRepository):
             cursor.execute("SELECT * FROM products WHERE id = ?", (str(product_id),))
             row = cursor.fetchone()
 
-            if row:
-                return Product(id=row["id"], name=row["name"], price=row["price"])
-
-            return None
+            if row is None:
+                raise ProductNotFoundError(str(product_id))
+            return Product(id=row["id"], name=row["name"], price=row["price"])
 
     def get_all(self) -> List[Product]:
         with self.db.get_connection() as conn:
@@ -53,7 +53,6 @@ class SQLiteProductRepository(ProductRepository):
             )
             conn.commit()
 
-            if cursor.rowcount > 0:
-                return self.get_by_id(product_id)
-
-            return None
+            if cursor.rowcount <= 0:
+                raise ProductNotFoundError(str(product_id))
+            return self.get_by_id(product_id)
