@@ -27,6 +27,7 @@ def close_shift(
     shift_update: ShiftUpdate,
     shift_service: ShiftService = Depends(get_shift_service),  # Injecting service
 ) -> dict[str, Shift]:
+    print(shift_update)
     if shift_update.status != ShiftStatus.CLOSED.value:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

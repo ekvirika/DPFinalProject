@@ -19,7 +19,7 @@ class SQLiteShiftRepository(ShiftRepository):
             cursor.execute(
                 "INSERT INTO shifts (id, status,"
                 " created_at, closed_at) VALUES (?, ?, ?, ?)",
-                (shift.id, shift.status.value, shift.created_at, shift.closed_at),
+                (str(shift.id), shift.status.value, shift.created_at, shift.closed_at),
             )
             conn.commit()
 

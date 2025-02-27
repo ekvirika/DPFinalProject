@@ -14,7 +14,7 @@ from infra.api.schemas.receipt import (
     QuoteRequest,
     QuoteResponse,
     ReceiptCreate,
-    ReceiptResponse,
+    ReceiptResponse, ReceiptPaymentResponse,
 )
 from runner.dependencies import get_receipt_service
 
@@ -46,6 +46,7 @@ def add_product_to_receipt(
     updated_receipt = receipt_service.add_product(
         receipt_id, product_data.product_id, product_data.quantity
     )
+    print(f"Updated receipt: {updated_receipt}")  # Check if products are being added
     if not updated_receipt:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -106,15 +107,9 @@ def add_payment(
         payment, updated_receipt = result
 
         # Convert Receipt to ReceiptResponse
-        receipt_response = ReceiptResponse(
+        receipt_response = ReceiptPaymentResponse(
             id=updated_receipt.id,
-            shift_id=updated_receipt.shift_id,
             status=updated_receipt.status.value,
-            subtotal=updated_receipt.subtotal,
-            discount_amount=updated_receipt.discount_amount,
-            total=updated_receipt.total,
-            products=[],  # Populate this if needed
-            payments=[],  # Populate this if needed
         )
 
         return PaymentCompleteResponse(

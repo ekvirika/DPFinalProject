@@ -29,8 +29,8 @@ class SQLiteReceiptRepository(ReceiptRepository):
                 " status, subtotal, discount_amount, "
                 "total) VALUES (?, ?, ?, ?, ?, ?)",
                 (
-                    receipt.id,
-                    receipt.shift_id,
+                    str(receipt.id),
+                    str(receipt.shift_id),
                     receipt.status.value,
                     receipt.subtotal,
                     receipt.discount_amount,
@@ -47,59 +47,59 @@ class SQLiteReceiptRepository(ReceiptRepository):
             cursor = conn.cursor()
 
             # Fetch receipt
-            cursor.execute("SELECT * FROM receipts WHERE id = ?", (receipt_id,))
+            cursor.execute("SELECT * FROM receipts WHERE id = ?", (str(receipt_id),))
             receipt_row = cursor.fetchone()
             if not receipt_row:
                 raise ReceiptNotFoundError(str(receipt_id))
 
-        receipt = Receipt(
-            id=receipt_row["id"],
-            shift_id=receipt_row["shift_id"],
-            status=ReceiptStatus(receipt_row["status"]),
-            subtotal=receipt_row["subtotal"],
-            discount_amount=receipt_row["discount_amount"],
-            total=receipt_row["total"],
-        )
-
-        # Get receipt items
-        cursor.execute(
-            "SELECT * FROM receipt_items WHERE receipt_id = ?", (receipt_id,)
-        )
-        item_rows = cursor.fetchall()
-
-        for item_row in item_rows:
-            discounts = [
-                Discount(**discount_dict)
-                for discount_dict in deserialize_json(item_row["discounts"])
-            ]
-
-            receipt_item = ReceiptItem(
-                product_id=UUID(item_row["product_id"]),  # Convert to UUID
-                quantity=item_row["quantity"],
-                unit_price=item_row["unit_price"],
-                discounts=discounts,
-            )
-            receipt_item.total_price = item_row["total_price"]
-            receipt_item.final_price = item_row["final_price"]
-
-            receipt.products.append(receipt_item)
-
-        # Get payments
-        cursor.execute("SELECT * FROM payments WHERE receipt_id = ?", (receipt_id,))
-        payment_rows = cursor.fetchall()
-
-        for payment_row in payment_rows:
-            payment = Payment(
-                id=payment_row["id"],
-                receipt_id=payment_row["receipt_id"],
-                payment_amount=payment_row["payment_amount"],
-                currency=Currency(payment_row["currency"]),
-                total_in_gel=payment_row["total_in_gel"],
-                exchange_rate=payment_row["exchange_rate"],
-                status=PaymentStatus(payment_row["status"]),
+            receipt = Receipt(
+                id=receipt_row["id"],
+                shift_id=receipt_row["shift_id"],
+                status=ReceiptStatus(receipt_row["status"]),
+                subtotal=receipt_row["subtotal"],
+                discount_amount=receipt_row["discount_amount"],
+                total=receipt_row["total"],
             )
 
-            receipt.payments.append(payment)
+            # Get receipt items
+            cursor.execute(
+                "SELECT * FROM receipt_items WHERE receipt_id = ?", (str(receipt_id),)
+            )
+            item_rows = cursor.fetchall()
+
+            for item_row in item_rows:
+                discounts = [
+                    Discount(**discount_dict)
+                    for discount_dict in deserialize_json(item_row["discounts"])
+                ]
+
+                receipt_item = ReceiptItem(
+                    product_id=UUID(item_row["product_id"]),  # Convert to UUID
+                    quantity=item_row["quantity"],
+                    unit_price=item_row["unit_price"],
+                    discounts=discounts,
+                )
+                receipt_item.total_price = item_row["total_price"]
+                receipt_item.final_price = item_row["final_price"]
+
+                receipt.products.append(receipt_item)
+
+            # Get payments
+            cursor.execute("SELECT * FROM payments WHERE receipt_id = ?", (str(receipt_id),))
+            payment_rows = cursor.fetchall()
+
+            for payment_row in payment_rows:
+                payment = Payment(
+                    id=payment_row["id"],
+                    receipt_id=payment_row["receipt_id"],
+                    payment_amount=payment_row["payment_amount"],
+                    currency=Currency(payment_row["currency"]),
+                    total_in_gel=payment_row["total_in_gel"],
+                    exchange_rate=payment_row["exchange_rate"],
+                    status=PaymentStatus(payment_row["status"]),
+                )
+
+                receipt.payments.append(payment)
 
         return receipt
 
@@ -129,8 +129,8 @@ class SQLiteReceiptRepository(ReceiptRepository):
                    final_price) 
                    VALUES (?, ?, ?, ?, ?, ?, ?)""",
                 (
-                    receipt_id,
-                    product_id,
+                    str(receipt_id),
+                    str(product_id),
                     quantity,
                     unit_price,
                     receipt_item.total_price,
@@ -141,8 +141,10 @@ class SQLiteReceiptRepository(ReceiptRepository):
 
             # Update receipt totals
             receipt = self.get(receipt_id)
+            receipt.products.append(receipt_item)
             if receipt:
                 receipt.recalculate_totals()
+                print(receipt)
 
                 cursor.execute(
                     "UPDATE receipts SET subtotal = ?, "
@@ -151,17 +153,18 @@ class SQLiteReceiptRepository(ReceiptRepository):
                         receipt.subtotal,
                         receipt.discount_amount,
                         receipt.total,
-                        receipt_id,
+                        str(receipt_id),
                     ),
                 )
 
                 conn.commit()
-                return receipt
+                return self.get(receipt_id)
 
             conn.rollback()
             raise ReceiptNotFoundError(
                 str(receipt_id)
             )  # Add a return or raise statement
+        return None
 
     def update_status(self, receipt_id: UUID, status: ReceiptStatus) -> Receipt:
         """Update the status of a receipt."""
@@ -169,7 +172,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE receipts SET status = ? WHERE id = ?",
-                (status.value, receipt_id),
+                (status.value, str(receipt_id)),
             )
             conn.commit()
 
@@ -177,33 +180,13 @@ class SQLiteReceiptRepository(ReceiptRepository):
                 return self.get(receipt_id)
             raise ReceiptNotFoundError(str(receipt_id))
 
-    def add_payment(self, receipt_id: UUID, payment: Payment) -> Receipt:
-        with self.database.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """INSERT INTO payments 
-                   (id, receipt_id, payment_amount, 
-                   currency, total_in_gel, exchange_rate, status) 
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (
-                    payment.id,
-                    payment.receipt_id,
-                    payment.payment_amount,
-                    payment.currency.value,
-                    payment.total_in_gel,
-                    payment.exchange_rate,
-                    payment.status.value,
-                ),
-            )
-            conn.commit()
 
-            return self.get(receipt_id)
 
     def get_receipts_by_shift(self, shift_id: UUID) -> List[Receipt]:
         """Retrieve all receipts for a specific shift."""
         with self.database.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT id FROM receipts WHERE shift_id = ?", (shift_id,))
+            cursor.execute("SELECT id FROM receipts WHERE shift_id = ?", (str(shift_id),))
             rows = cursor.fetchall()
 
             return [self.get(UUID(row["id"])) for row in rows]  # Ensure UUID conversion

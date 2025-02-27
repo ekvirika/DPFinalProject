@@ -7,8 +7,8 @@ from uuid import UUID
 
 
 class ShiftStatus(str, Enum):
-    OPEN = "OPEN"
-    CLOSED = "CLOSED"
+    OPEN = "open"
+    CLOSED = "closed"
 
 
 @dataclass(frozen=True)

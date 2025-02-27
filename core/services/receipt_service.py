@@ -50,14 +50,7 @@ class ReceiptService:
         self, receipt_id: UUID, product_id: UUID, quantity: int
     ) -> Optional[Receipt]:
         """Add a product to a receipt with automatic discount application."""
-        receipt = self.receipt_repository.get(receipt_id)
-        if not receipt or receipt.status == ReceiptStatus.CLOSED:
-            return None
-
         product = self.product_repository.get_by_id(product_id)
-        if not product:
-            return None
-
         # Add product (initially without discounts)
         updated_receipt = self.receipt_repository.add_product(
             receipt_id, product_id, quantity, product.price, []
@@ -114,7 +107,7 @@ class ReceiptService:
         )
 
         # Add payment to receipt
-        updated_receipt = self.receipt_repository.add_payment(receipt_id, payment)
+        updated_receipt = self.receipt_repository.get(receipt_id)
 
         # Check if receipt is fully paid
         if updated_receipt:

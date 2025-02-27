@@ -48,6 +48,11 @@ class ReceiptResponse(BaseModel):
         orm_mode = True
 
 
+class ReceiptPaymentResponse(BaseModel):
+    id: UUID
+    status: str
+
+
 class ProductAddRequest(BaseModel):
     product_id: UUID
     quantity: int
@@ -73,7 +78,7 @@ class PaymentRequest(BaseModel):
 
 class PaymentCompleteResponse(BaseModel):
     payment: PaymentResponse
-    receipt: ReceiptResponse
+    receipt: ReceiptPaymentResponse
 
 
 class ItemSoldResponse(BaseModel):
