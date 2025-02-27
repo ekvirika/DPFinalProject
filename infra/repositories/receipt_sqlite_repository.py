@@ -1,7 +1,5 @@
-from typing import Dict, List, Any
+from typing import Any, Dict, List
 from uuid import UUID
-from sqlite3 import Connection
-
 
 from core.models.errors import ReceiptNotFoundError
 from core.models.receipt import (
@@ -13,7 +11,6 @@ from core.models.receipt import (
     ReceiptItem,
     ReceiptStatus,
 )
-from core.models.repositories.product_repository import ProductRepository
 from core.models.repositories.receipt_repository import ReceiptRepository
 from infra.db.database import Database, deserialize_json, serialize_json
 
@@ -25,7 +22,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
     def create(self, shift_id: UUID) -> Receipt:
         receipt = Receipt(shift_id)
 
-        with self.database.get_connection() as conn:  # type: Connection
+        with self.database.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "INSERT INTO receipts (id, shift_id,"
@@ -46,7 +43,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
 
     def get(self, receipt_id: UUID) -> Receipt:
         """Retrieve a receipt by its ID, including its items and payments."""
-        with self.database.get_connection() as conn:  # type: Connection
+        with self.database.get_connection() as conn:
             cursor = conn.cursor()
 
             # Fetch receipt
@@ -122,7 +119,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
             discounts=discount_objects,
         )
 
-        with self.database.get_connection() as conn:  # type: Connection
+        with self.database.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 """INSERT INTO receipt_items 
@@ -166,10 +163,9 @@ class SQLiteReceiptRepository(ReceiptRepository):
                 str(receipt_id)
             )  # Add a return or raise statement
 
-    def update_status(self, receipt_id: UUID, status: ReceiptStatus) \
-            -> Receipt:
+    def update_status(self, receipt_id: UUID, status: ReceiptStatus) -> Receipt:
         """Update the status of a receipt."""
-        with self.database.get_connection() as conn:  # type: Connection
+        with self.database.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "UPDATE receipts SET status = ? WHERE id = ?",
@@ -182,7 +178,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
             raise ReceiptNotFoundError(str(receipt_id))
 
     def add_payment(self, receipt_id: UUID, payment: Payment) -> Receipt:
-        with self.database.get_connection() as conn:  # type: Connection
+        with self.database.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 """INSERT INTO payments 
@@ -205,7 +201,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
 
     def get_receipts_by_shift(self, shift_id: UUID) -> List[Receipt]:
         """Retrieve all receipts for a specific shift."""
-        with self.database.get_connection() as conn:  # type: Connection
+        with self.database.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT id FROM receipts WHERE shift_id = ?", (shift_id,))
             rows = cursor.fetchall()

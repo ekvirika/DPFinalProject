@@ -1,11 +1,9 @@
 from datetime import datetime
-from typing import Dict, Optional, cast
-from uuid import UUID
+from typing import Dict, Optional
 
-# import requests
+import requests
 
 from core.models.receipt import Currency, Quote, Receipt
-from core.models.repositories.receipt_repository import ReceiptRepository
 
 
 class ExchangeRateService:
@@ -22,9 +20,9 @@ class ExchangeRateService:
 
         # If we haven't updated today or don't have rates yet
         if (
-                not self.last_update
-                or current_time.date() != self.last_update.date()
-                or not self.rates_cache
+            not self.last_update
+            or current_time.date() != self.last_update.date()
+            or not self.rates_cache
         ):
             try:
                 response = requests.get(self.base_url, timeout=10)
@@ -42,7 +40,9 @@ class ExchangeRateService:
                 }
                 self.last_update = current_time
 
-    def get_exchange_rate(self, from_currency: Currency, to_currency: Currency) -> float:
+    def get_exchange_rate(
+        self, from_currency: Currency, to_currency: Currency
+    ) -> float:
         """Get the exchange rate between two currencies"""
         self._update_rates()
 
@@ -65,7 +65,9 @@ class ExchangeRateService:
 
         return to_rate / from_rate if from_rate != 0 else to_rate
 
-    def convert(self, amount: float, from_currency: Currency, to_currency: Currency) -> float:
+    def convert(
+        self, amount: float, from_currency: Currency, to_currency: Currency
+    ) -> float:
         """Convert an amount from one currency to another"""
         rate = self.get_exchange_rate(from_currency, to_currency)
         return amount * rate

@@ -1,5 +1,5 @@
-from typing import Dict, List, Union, Any
-from uuid import UUID, uuid4
+from typing import Any, Dict, List
+from uuid import UUID
 
 from core.models.campaign import Campaign, CampaignType
 from core.models.errors import CampaignValidationError
@@ -19,70 +19,17 @@ class CampaignService:
     def create_campaign(
         self, name: str, campaign_type: str, rules: Dict[str, Any]
     ) -> Campaign:
-        self._validate_campaign_data(name, campaign_type, rules)
-        campaign_type_enum = CampaignType(campaign_type)
-        return self.campaign_repository.create(name, campaign_type, rules)  # Pass the required arguments
+        # No validation here, let repository handle errors
+        return self.campaign_repository.create(name, campaign_type, rules)
 
     def get_campaign(self, campaign_id: UUID) -> Campaign:
-        campaign = self.campaign_repository.get_by_id(campaign_id)
-        if not campaign:
-            raise CampaignValidationError(f"Campaign with ID '{campaign_id}' not found")
-        return campaign
+        # No validation here, repository will raise appropriate exceptions
+        return self.campaign_repository.get_by_id(campaign_id)
 
     def get_all_campaigns(self) -> List[Campaign]:
         return self.campaign_repository.get_all()
 
     def deactivate_campaign(self, campaign_id: UUID) -> None:
-        campaign = self.campaign_repository.get_by_id(campaign_id)
-        if not campaign:
-            raise CampaignValidationError(f"Campaign with ID '{campaign_id}' not found")
+        # No validation here, repository will raise appropriate exceptions
         self.campaign_repository.deactivate(campaign_id)
 
-    def _validate_campaign_data(
-        self, name: str, campaign_type: str, rules: Dict[str, Any]
-    ) -> None:
-        if not name:
-            raise CampaignValidationError("Campaign name cannot be empty")
-
-        if campaign_type not in CampaignType.__members__:
-            raise CampaignValidationError(f"Invalid campaign type: {campaign_type}")
-
-        self._validate_rules(campaign_type, rules)
-
-    def _validate_rules(self, campaign_type: str, rules: Dict[str, Any]) -> None:
-        if campaign_type == CampaignType.BUY_N_GET_N.value:
-            required_fields = [
-                "buy_product_id",
-                "get_product_id",
-                "buy_quantity",
-                "get_quantity",
-            ]
-            self._validate_required_fields(rules, required_fields)
-            self._validate_product_existence(
-                [rules["buy_product_id"], rules["get_product_id"]]
-            )
-        elif campaign_type == CampaignType.DISCOUNT.value:
-            required_fields = ["applies_to", "discount_percentage"]
-            self._validate_required_fields(rules, required_fields)
-            if rules["applies_to"] == "product" and "product_ids" in rules:  # Make sure types match
-                self._validate_product_existence(rules["product_ids"])
-        elif campaign_type == CampaignType.COMBO.value:
-            required_fields = ["product_ids", "discount_percentage"]
-            self._validate_required_fields(rules, required_fields)
-            self._validate_product_existence(rules["product_ids"])
-
-    def _validate_required_fields(
-        self, rules: Dict[str, Any], required_fields: List[str]
-    ) -> None:
-        missing_fields = [field for field in required_fields if field not in rules]
-        if missing_fields:
-            raise CampaignValidationError(
-                f"Missing required fields for campaign: {', '.join(missing_fields)}"
-            )
-
-    def _validate_product_existence(self, product_ids: List[UUID]) -> None:
-        for product_id in product_ids:
-            if not self.product_repository.get_by_id(product_id):
-                raise CampaignValidationError(
-                    f"Product with ID '{product_id}' not found"
-                )

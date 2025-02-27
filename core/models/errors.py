@@ -84,3 +84,36 @@ class CampaignDatabaseError(POSException):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             error_code="CAMPAIGN_DATABASE_ERROR",
         )
+
+
+
+class CampaignNotFoundException(HTTPException):
+    def __init__(self, campaign_id):
+        super().__init__(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Campaign with ID '{campaign_id}' not found",
+        )
+
+
+class ProductNotFoundException(HTTPException):
+    def __init__(self, product_id):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Product with ID '{product_id}' not found",
+        )
+
+
+class InvalidCampaignTypeException(HTTPException):
+    def __init__(self, campaign_type):
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Unknown campaign type: {campaign_type}",
+        )
+
+
+class InvalidCampaignRulesException(HTTPException):
+    def __init__(self, message) -> None:
+        super().__init__(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=message,
+        )

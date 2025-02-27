@@ -1,6 +1,6 @@
 from datetime import datetime
 from typing import Optional
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
 from core.models.repositories.shift_repository import ShiftRepository
 from core.models.shift import Shift, ShiftStatus

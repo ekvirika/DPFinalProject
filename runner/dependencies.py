@@ -61,7 +61,9 @@ def get_app_container(db_path: str) -> AppContainer:
     campaign_repository = SQLiteCampaignRepository(database)
     shift_repository = SQLiteShiftRepository(database)
     payment_repository = SQLitePaymentRepository(database)
-    report_repository = SQLiteReportRepository(database, receipt_repository)  # Added receipt_repository argument
+    report_repository = SQLiteReportRepository(
+        database, receipt_repository
+    )  # Added receipt_repository argument
 
     # Initialize services
     exchange_service = ExchangeRateService()  # Removed receipt_repository argument
@@ -69,24 +71,25 @@ def get_app_container(db_path: str) -> AppContainer:
     product_service = ProductService(product_repository=product_repository)
 
     campaign_service = CampaignService(
-        campaign_repository=campaign_repository,  # Changed campaign_repo to campaign_repository
-        product_repository=product_repository  # Changed product_repo to product_repository
+        campaign_repository=campaign_repository,
+        product_repository=product_repository,
     )
 
     shift_service = ShiftService(shift_repository)
 
     discount_service = DiscountService(
         campaign_repository=campaign_repository,  # Added campaign_repository
-        product_repository=product_repository  # Added product_repository
+        product_repository=product_repository,  # Added product_repository
     )
 
-    receipt_service = ReceiptService(receipt_repository,
-                                     product_repository,
-                                     shift_repository,
-                                     discount_service,
-                                     exchange_service,
-                                     payment_repository
-                                     )
+    receipt_service = ReceiptService(
+        receipt_repository,
+        product_repository,
+        shift_repository,
+        discount_service,
+        exchange_service,
+        payment_repository,
+    )
 
     report_service = ReportService(report_repository, shift_repository)
 

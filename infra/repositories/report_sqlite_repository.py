@@ -30,7 +30,7 @@ class SQLiteReportRepository(ReportRepository):
 
         # Count items sold
         items_sold_dict = {}
-        revenue_by_currency_dict : dict[str, float] = {}
+        revenue_by_currency_dict: dict[str, float] = {}
 
         for receipt in receipts:
             # Count items

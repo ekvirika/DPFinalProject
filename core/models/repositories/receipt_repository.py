@@ -1,7 +1,7 @@
-from typing import Dict, List, Protocol, Any
+from typing import Dict, List, Protocol
 from uuid import UUID
 
-from core.models.receipt import Payment, Receipt, ReceiptStatus, Discount
+from core.models.receipt import Discount, Payment, Receipt, ReceiptStatus
 
 
 class ReceiptRepository(Protocol):

@@ -1,8 +1,7 @@
-from http.client import HTTPException
 from typing import Dict
 from uuid import UUID
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from starlette import status
 
 from core.models.report import SalesReport, ShiftReport
@@ -33,4 +32,3 @@ def get_sales_report(
 ) -> dict[str, SalesReport]:
     report = report_service.generate_sales_report()
     return {"sales": report}
-

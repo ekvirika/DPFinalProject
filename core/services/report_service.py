@@ -1,13 +1,15 @@
 from typing import Optional
 from uuid import UUID
 
-from core.models.report import ShiftReport, SalesReport
+from core.models.report import SalesReport, ShiftReport
 from core.models.repositories.report_repository import ReportRepository
 from core.models.repositories.shift_repository import ShiftRepository
 
 
 class ReportService:
-    def __init__(self, report_repository: ReportRepository, shift_repository: ShiftRepository):
+    def __init__(
+        self, report_repository: ReportRepository, shift_repository: ShiftRepository
+    ):
         self.report_repository = report_repository
         self.shift_repository = shift_repository
 

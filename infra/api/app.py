@@ -18,8 +18,8 @@ def create_app_container() -> AppContainer:
 
 
 # Include routers with prefixes and tags
-app.include_router(receipt_router, prefix="/receipts", tags=["Receipts"])
-app.include_router(campaign_router, prefix="/campaigns", tags=["Campaigns"])
 app.include_router(product_router, prefix="/products", tags=["Products"])
+app.include_router(campaign_router, prefix="/campaigns", tags=["Campaigns"])
 app.include_router(shift_router, prefix="/shifts", tags=["Shifts"])
+app.include_router(receipt_router, prefix="/receipts", tags=["Receipts"])
 app.include_router(shift_router, prefix="/reports", tags=["Reports"])

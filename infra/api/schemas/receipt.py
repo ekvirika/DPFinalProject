@@ -1,7 +1,5 @@
-from dataclasses import Field
 from typing import List
 from uuid import UUID
-from wsgiref.validate import validator
 
 from pydantic import BaseModel
 
@@ -59,11 +57,10 @@ class QuoteRequest(BaseModel):
     currency: Currency
 
 
-
 class QuoteResponse(BaseModel):
     receipt_id: UUID
-    base_currency: str
-    requested_currency: str
+    base_currency: Currency
+    requested_currency: Currency
     exchange_rate: float
     total_in_base_currency: float
     total_in_requested_currency: float

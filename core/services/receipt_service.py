@@ -88,7 +88,7 @@ class ReceiptService:
         return quote
 
     def add_payment(
-            self, receipt_id: UUID, amount: float, currency_name: str
+        self, receipt_id: UUID, amount: float, currency_name: str
     ) -> Optional[Tuple[Payment, Receipt]]:
         """Add a payment to a receipt and close it if fully paid."""
 

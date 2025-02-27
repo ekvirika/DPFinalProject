@@ -1,7 +1,7 @@
-from typing import Dict, List, Optional, Protocol, Any
+from typing import Any, Dict, List, Optional, Protocol
 from uuid import UUID
 
-from core.models.campaign import Campaign, CampaignType
+from core.models.campaign import Campaign
 
 
 class CampaignRepository(Protocol):

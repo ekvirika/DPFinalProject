@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Dict
+from typing import Dict, List
 from uuid import UUID
 
 from core.models.receipt import ItemSold, RevenueByCurrency
@@ -11,6 +11,7 @@ class ShiftReport:
     receipt_count: int
     items_sold: List[ItemSold]
     revenue_by_currency: List[RevenueByCurrency]
+
 
 @dataclass
 class SalesReport:

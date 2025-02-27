@@ -1,5 +1,5 @@
 from typing import List, Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from core.models.product import Product
 from core.models.repositories.product_repository import ProductRepository
@@ -11,13 +11,13 @@ class SQLiteProductRepository(ProductRepository):
         self.db = db
 
     def create(self, name: str, price: float) -> Product:
-        product = Product(name=name, price=price)
+        product = Product(id = uuid4(), name=name, price=price)
 
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "INSERT INTO products (id, name, price) VALUES (?, ?, ?)",
-                (product.id, product.name, product.price),
+                (str(product.id), product.name, product.price),
             )
             conn.commit()
 
