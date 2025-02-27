@@ -32,6 +32,13 @@ class PaymentResponse(BaseModel):
     total_in_gel: float
     exchange_rate: float
     status: str
+    # total_in_requested_currency: float = field(init=False)
+    # change : float = field(init=False)
+    #
+    # def __post_init__(self) -> None:
+    #     self.total_in_requested_currency = self.total_in_gel * self.exchange_rate
+    #     self.change = self.payment_amount - self.total_in_requested_currency
+
 
 
 class ReceiptResponse(BaseModel):

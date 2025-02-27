@@ -50,7 +50,7 @@ class Database:
                 campaign_id TEXT NOT NULL,
                 discount_value REAL NOT NULL,
                 applies_to TEXT NOT NULL,
-                min_amount REAL NOT NULL DEFAULT 0,
+                min_amount REAL DEFAULT 0,
                 FOREIGN KEY (campaign_id) REFERENCES campaigns (id) ON DELETE CASCADE
             );
             """)

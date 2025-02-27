@@ -35,3 +35,5 @@ class ReceiptRepository(Protocol):
     def get_receipts_by_shift(self, shift_id: UUID) -> List[Receipt]:
         """Get all receipts for a shift"""
         pass
+    def update(self, receipt_id: UUID, updated_receipt : Receipt) -> Receipt:
+        pass

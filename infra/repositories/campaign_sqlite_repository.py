@@ -48,8 +48,10 @@ class SQLiteCampaignRepository(CampaignRepository):
 
                 if campaign_type == CampaignType.DISCOUNT.value:
                     cursor.execute(
-                        "INSERT INTO discount_rules (id, campaign_id, discount_value, applies_to, min_amount) VALUES (?, ?, ?, ?, ?)",
-                        (rule_id, campaign.id, rule_obj.discount_value, rule_obj.applies_to, rule_obj.min_amount)
+                        "INSERT INTO discount_rules (id, campaign_id, discount_value, applies_to, min_amount) "
+                        "VALUES (?, ?, ?, ?, ?)",
+                        (rule_id, campaign.id, rule_obj.discount_value, rule_obj.applies_to,
+                         rule_obj.min_amount)
                     )
 
                     # Insert product IDs if applicable

@@ -1,5 +1,5 @@
 from typing import List, Optional, Tuple
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from core.models.receipt import (
     Currency,
@@ -82,7 +82,7 @@ class ReceiptService:
         updated_receipt = self.discount_service.apply_discounts(receipt)
 
         # Save the updated receipt
-        return self.receipt_repository.update(updated_receipt)
+        return self.receipt_repository.update(receipt_id, updated_receipt)
 
     def remove_product(
             self, receipt_id: UUID, product_id: UUID, quantity: int = None
@@ -157,7 +157,7 @@ class ReceiptService:
         )
 
         # Add payment to receipt
-        updated_receipt = self.receipt_repository.add_payment(receipt_id, payment)
+        updated_receipt = self.receipt_repository.get(receipt_id)
 
         # Check if receipt is fully paid
         if updated_receipt:
@@ -178,3 +178,4 @@ class ReceiptService:
     def get_receipts_by_shift(self, shift_id: UUID) -> List[Receipt]:
         """Get all receipts for a shift."""
         return self.receipt_repository.get_receipts_by_shift(shift_id)
+
