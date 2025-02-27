@@ -35,13 +35,67 @@ class Database:
             """)
 
             cursor.execute("""
+            -- Campaigns table
             CREATE TABLE IF NOT EXISTS campaigns (
                 id TEXT PRIMARY KEY,
                 name TEXT NOT NULL,
                 campaign_type TEXT NOT NULL,
-                rules TEXT NOT NULL,
-                is_active INTEGER NOT NULL DEFAULT 1
-            )
+                is_active INTEGER DEFAULT 1
+            );
+            """)
+
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS discount_rules (
+                id TEXT PRIMARY KEY,
+                campaign_id TEXT NOT NULL,
+                discount_value REAL NOT NULL,
+                applies_to TEXT NOT NULL,
+                min_amount REAL NOT NULL DEFAULT 0,
+                FOREIGN KEY (campaign_id) REFERENCES campaigns (id) ON DELETE CASCADE
+            );
+            """)
+
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS buy_n_get_n_rules (
+                id TEXT PRIMARY KEY,
+                campaign_id TEXT NOT NULL,
+                buy_product_id TEXT NOT NULL,
+                buy_quantity INTEGER NOT NULL,
+                get_product_id TEXT NOT NULL,
+                get_quantity INTEGER NOT NULL,
+                FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+            );
+            """)
+
+            cursor.execute("""
+            -- Combo rules table
+            CREATE TABLE IF NOT EXISTS combo_rules (
+                id TEXT PRIMARY KEY,
+                campaign_id TEXT NOT NULL,
+                discount_type TEXT NOT NULL,
+                discount_value REAL NOT NULL,
+                FOREIGN KEY (campaign_id) REFERENCES campaigns(id) ON DELETE CASCADE
+            );
+            """)
+
+            cursor.execute("""
+            -- Products for combo rules (many-to-many relationship)
+            CREATE TABLE IF NOT EXISTS combo_rule_products (
+                combo_rule_id TEXT NOT NULL,
+                product_id TEXT NOT NULL,
+                PRIMARY KEY (combo_rule_id, product_id),
+                FOREIGN KEY (combo_rule_id) REFERENCES combo_rules(id) ON DELETE CASCADE
+            );
+            """)
+
+            cursor.execute("""
+            -- Products for discount rules (when applies_to = 'products')
+            CREATE TABLE  IF NOT EXISTS discount_rule_products (
+                discount_rule_id TEXT NOT NULL,
+                product_id TEXT NOT NULL,
+                PRIMARY KEY (discount_rule_id, product_id),
+                FOREIGN KEY (discount_rule_id) REFERENCES discount_rules(id) ON DELETE CASCADE
+            );
             """)
 
             cursor.execute("""
@@ -67,13 +121,12 @@ class Database:
 
             cursor.execute("""
             CREATE TABLE IF NOT EXISTS receipt_items (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                id TEXT PRIMARY KEY,
                 receipt_id TEXT NOT NULL,
                 product_id TEXT NOT NULL,
                 quantity INTEGER NOT NULL,
                 unit_price REAL NOT NULL,
                 total_price REAL NOT NULL,
-                discounts TEXT NOT NULL DEFAULT '[]',
                 final_price REAL NOT NULL,
                 FOREIGN KEY (receipt_id) REFERENCES receipts (id),
                 FOREIGN KEY (product_id) REFERENCES products (id)
@@ -91,6 +144,18 @@ class Database:
                 status TEXT NOT NULL,
                 FOREIGN KEY (receipt_id) REFERENCES receipts (id)
             )
+            """)
+
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS receipt_item_discounts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                receipt_item_id TEXT NOT NULL,
+                campaign_id TEXT NOT NULL,
+                campaign_name TEXT NOT NULL,
+                discount_amount REAL NOT NULL,
+                FOREIGN KEY (receipt_item_id) REFERENCES receipt_items (id) ON DELETE CASCADE,
+                FOREIGN KEY (campaign_id) REFERENCES campaigns (id)
+            );
             """)
 
             conn.commit()

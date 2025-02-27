@@ -44,6 +44,7 @@ class AppContainer:
     exchange_service: ExchangeRateService
     report_service: ReportService
     shift_service: ShiftService
+    discount_service: DiscountService
 
 
 @lru_cache()
@@ -78,8 +79,8 @@ def get_app_container(db_path: str) -> AppContainer:
     shift_service = ShiftService(shift_repository)
 
     discount_service = DiscountService(
-        campaign_repository=campaign_repository,  # Added campaign_repository
-        product_repository=product_repository,  # Added product_repository
+        campaign_repository=campaign_repository, # Added campaign_repository,
+        product_repository=product_repository
     )
 
     receipt_service = ReceiptService(
@@ -105,6 +106,7 @@ def get_app_container(db_path: str) -> AppContainer:
         exchange_service=exchange_service,
         report_service=report_service,
         shift_service=shift_service,
+        discount_service=discount_service
     )
 
 
@@ -135,3 +137,8 @@ def get_report_service() -> ReportService:
 def get_shift_service() -> ShiftService:
     container = get_app_container(DEFAULT_DB_PATH)
     return container.shift_service
+
+
+def get_discount_calculation_service() -> DiscountService:
+    container = get_app_container(DEFAULT_DB_PATH)
+    return container.discount_service

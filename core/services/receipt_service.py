@@ -7,6 +7,7 @@ from core.models.receipt import (
     Quote,
     Receipt,
     ReceiptStatus,
+    ReceiptItem,
 )
 from core.models.repositories.payment_repository import PaymentRepository
 from core.models.repositories.product_repository import ProductRepository
@@ -19,13 +20,13 @@ from core.services.exchange_rate_service import ExchangeRateService
 
 class ReceiptService:
     def __init__(
-        self,
-        receipt_repository: ReceiptRepository,
-        product_repository: ProductRepository,
-        shift_repository: ShiftRepository,
-        discount_service: DiscountService,
-        exchange_service: ExchangeRateService,
-        payment_repository: PaymentRepository,
+            self,
+            receipt_repository: ReceiptRepository,
+            product_repository: ProductRepository,
+            shift_repository: ShiftRepository,
+            discount_service: DiscountService,
+            exchange_service: ExchangeRateService,
+            payment_repository: PaymentRepository,
     ):
         self.receipt_repository = receipt_repository
         self.product_repository = product_repository
@@ -47,27 +48,77 @@ class ReceiptService:
         return self.receipt_repository.get(receipt_id)
 
     def add_product(
-        self, receipt_id: UUID, product_id: UUID, quantity: int
+            self, receipt_id: UUID, product_id: UUID, quantity: int
     ) -> Optional[Receipt]:
         """Add a product to a receipt with automatic discount application."""
+        receipt = self.receipt_repository.get(receipt_id)
+        if not receipt or receipt.status == ReceiptStatus.CLOSED:
+            return None
+
         product = self.product_repository.get_by_id(product_id)
-        # Add product (initially without discounts)
-        updated_receipt = self.receipt_repository.add_product(
-            receipt_id, product_id, quantity, product.price, []
+        if not product:
+            return None
+
+        # Check if product already exists in receipt
+        existing_item = next(
+            (item for item in receipt.products if item.product_id == product_id),
+            None
         )
 
-        if updated_receipt:
-            # Apply discounts
-            updated_receipt = self.discount_service.apply_discounts(updated_receipt)
+        if existing_item:
+            # Update quantity of existing item
+            existing_item.quantity += quantity
+            existing_item.total_price = existing_item.unit_price * existing_item.quantity
+        else:
+            # Create a new receipt item
+            new_item = ReceiptItem(
+                product_id=product_id,
+                quantity=quantity,
+                unit_price=product.price,
+            )
+            receipt.products.append(new_item)
 
-            # Save the updated receipt (with discounts)
-            # In a real implementation, you'd update the database with discount info
-            return updated_receipt
+        # Apply all applicable discounts
+        updated_receipt = self.discount_service.apply_discounts(receipt)
 
-        return None
+        # Save the updated receipt
+        return self.receipt_repository.update(updated_receipt)
+
+    def remove_product(
+            self, receipt_id: UUID, product_id: UUID, quantity: int = None
+    ) -> Optional[Receipt]:
+        """Remove a product from a receipt and recalculate discounts."""
+        receipt = self.receipt_repository.get(receipt_id)
+        if not receipt or receipt.status == ReceiptStatus.CLOSED:
+            return None
+
+        # Find the product in the receipt
+        item_index = next(
+            (i for i, item in enumerate(receipt.products) if item.product_id == product_id),
+            None
+        )
+
+        if item_index is None:
+            return receipt  # Product not in receipt
+
+        item = receipt.products[item_index]
+
+        if quantity is None or quantity >= item.quantity:
+            # Remove the entire item
+            receipt.products.pop(item_index)
+        else:
+            # Reduce the quantity
+            item.quantity -= quantity
+            item.total_price = item.unit_price * item.quantity
+
+        # Recalculate discounts
+        updated_receipt = self.discount_service.apply_discounts(receipt)
+
+        # Save the updated receipt
+        return self.receipt_repository.update(updated_receipt)
 
     def calculate_payment_quote(
-        self, receipt_id: UUID, currency: Currency
+            self, receipt_id: UUID, currency: Currency
     ) -> Optional[Quote]:
         """Calculate payment quote for a receipt in a specific currency."""
         receipt = self.receipt_repository.get(receipt_id)
@@ -81,10 +132,9 @@ class ReceiptService:
         return quote
 
     def add_payment(
-        self, receipt_id: UUID, amount: float, currency_name: str
+            self, receipt_id: UUID, amount: float, currency_name: str
     ) -> Optional[Tuple[Payment, Receipt]]:
         """Add a payment to a receipt and close it if fully paid."""
-
         # Ensure receipt_id is UUID
         receipt_id = UUID(receipt_id) if isinstance(receipt_id, str) else receipt_id
 
@@ -107,7 +157,7 @@ class ReceiptService:
         )
 
         # Add payment to receipt
-        updated_receipt = self.receipt_repository.get(receipt_id)
+        updated_receipt = self.receipt_repository.add_payment(receipt_id, payment)
 
         # Check if receipt is fully paid
         if updated_receipt:

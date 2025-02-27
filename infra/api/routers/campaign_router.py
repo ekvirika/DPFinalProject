@@ -1,48 +1,78 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from typing import Dict, List, Any
+
 from core.models.campaign import Campaign, CampaignType
-from core.models.errors import ProductNotFoundException, InvalidCampaignRulesException
+from core.models.errors import ProductNotFoundException, InvalidCampaignRulesException, CampaignNotFoundException
 from core.services.campaign_service import CampaignService
-from core.services.product_service import ProductService
+from core.services.discount_service import DiscountService
 from infra.api.schemas.campaign import CampaignCreate, CampaignResponse
-from runner.dependencies import get_campaign_service, get_product_service
-from uuid import UUID
-from typing import Any, Dict
+from runner.dependencies import get_campaign_service, get_discount_calculation_service
 
 router = APIRouter()
 
 
 @router.post("/", response_model=Dict[str, CampaignResponse])
 def create_campaign(
-    campaign: CampaignCreate,
-    campaign_service: CampaignService = Depends(get_campaign_service),) -> Dict[str, Any]:
-    rules_dict = campaign.rules.dict() if not isinstance(campaign.rules, dict) else campaign.rules
-    # No validation here, let repository handle errors
-    new_campaign = campaign_service.create_campaign(campaign.name, campaign.campaign_type, rules_dict)
-    return {"campaign": new_campaign}
-
-
-@router.delete("/{campaign_id}")
-def deactivate_campaign(
-    campaign_id: UUID,
-    campaign_service: CampaignService = Depends(get_campaign_service)
+        campaign: CampaignCreate,
+        campaign_service: CampaignService = Depends(get_campaign_service),
 ) -> Dict[str, Any]:
-    # No validation here, let repository handle errors
-    campaign_service.deactivate_campaign(campaign_id)
-    return {}
+    try:
+        rules_dict = campaign.rules.dict() if hasattr(campaign.rules, 'dict') else campaign.rules
+        new_campaign = campaign_service.create_campaign(campaign.name, campaign.campaign_type, rules_dict)
 
-
-@router.get("/")
-def list_campaigns(
-    campaign_service: CampaignService = Depends(get_campaign_service)
-) -> Dict[str, list[Campaign]]:
-    return {"campaigns": campaign_service.get_all_campaigns()}
+        # Convert to response format
+        return {"campaign": _campaign_to_response(new_campaign)}
+    except InvalidCampaignRulesException as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/{campaign_id}", response_model=Dict[str, CampaignResponse])
 def get_campaign(
-    campaign_id: UUID,
-    campaign_service: CampaignService = Depends(get_campaign_service)
-) -> Dict[str, Campaign]:
-    # No validation here, let repository handle errors
-    campaign = campaign_service.get_campaign(campaign_id)
-    return {"campaign": campaign}
+        campaign_id: str,
+        campaign_service: CampaignService = Depends(get_campaign_service)
+) -> Dict[str, Any]:
+    try:
+        campaign = campaign_service.get_campaign(campaign_id)
+        return {"campaign": _campaign_to_response(campaign)}
+    except CampaignNotFoundException as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/", response_model=Dict[str, List[CampaignResponse]])
+def list_campaigns(
+        campaign_service: CampaignService = Depends(get_campaign_service)
+) -> Dict[str, List[Dict[str, Any]]]:
+    try:
+        campaigns = campaign_service.get_all_campaigns()
+        return {"campaigns": [_campaign_to_response(campaign) for campaign in campaigns]}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.delete("/{campaign_id}")
+def deactivate_campaign(
+        campaign_id: str,
+        campaign_service: CampaignService = Depends(get_campaign_service)
+) -> Dict[str, Any]:
+    try:
+        campaign_service.deactivate_campaign(campaign_id)
+        return {"success": True}
+    except CampaignNotFoundException as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+def _campaign_to_response(campaign: Campaign) -> Dict[str, Any]:
+    """Convert Campaign domain object to API response format."""
+    return {
+        "id": campaign.id,
+        "name": campaign.name,
+        "campaign_type": campaign.campaign_type.value,
+        "rules": campaign.rules.__dict__,
+        "is_active": campaign.is_active
+    }

@@ -1,194 +1,145 @@
-from typing import Any, Dict, List
+from typing import Dict, List, Optional, Tuple
 from uuid import UUID
 
-from core.models.campaign import (
-    BuyNGetNRule,
-    Campaign,
-    CampaignType,
-    ComboRule,
-    DiscountRule,
-)
-from core.models.receipt import Discount, Receipt
+from core.models.campaign import Campaign, CampaignType, DiscountRule, BuyNGetNRule, ComboRule
+from core.models.receipt import Receipt, ReceiptItem, Discount
 from core.models.repositories.campaign_repository import CampaignRepository
 from core.models.repositories.product_repository import ProductRepository
 
 
 class DiscountService:
     def __init__(
-        self,
-        campaign_repository: CampaignRepository,
-        product_repository: ProductRepository,
+            self,
+            campaign_repository: CampaignRepository,
+            product_repository: ProductRepository,
     ):
         self.campaign_repository = campaign_repository
         self.product_repository = product_repository
 
     def apply_discounts(self, receipt: Receipt) -> Receipt:
-        """Apply all available discounts to a receipt and return the updated receipt."""
+        """Apply all applicable discounts to the receipt items."""
+        # Get all active campaigns
         active_campaigns = self.campaign_repository.get_active()
-        product_discounts: dict[str, list[Any]] = {}
 
-        # Initialize empty discount lists for each product
-        for product_item in receipt.products:
-            product_discounts[str(product_item.product_id)] = []
+        # Clear existing discounts
+        for item in receipt.products:
+            item.discounts = []
 
-        # Apply product-specific discounts
+        # Apply each campaign type
         for campaign in active_campaigns:
             if campaign.campaign_type == CampaignType.DISCOUNT:
-                self._apply_discount_campaign(campaign, receipt, product_discounts)
+                self._apply_discount_rule(receipt, campaign)
             elif campaign.campaign_type == CampaignType.BUY_N_GET_N:
-                self._apply_buy_n_get_n_campaign(campaign, receipt, product_discounts)
+                self._apply_buy_n_get_n_rule(receipt, campaign)
             elif campaign.campaign_type == CampaignType.COMBO:
-                self._apply_combo_campaign(campaign, receipt, product_discounts)
+                self._apply_combo_rule(receipt, campaign)
 
-        # Update receipt items with the calculated discounts
-        for item in receipt.products:
-            item.discounts = product_discounts[str(item.product_id)]
-            item.final_price = item.total_price - sum(
-                d.discount_amount for d in item.discounts
-            )
-
-        # Recalculate receipt totals
+        # Recalculate receipt totals after applying all discounts
         receipt.recalculate_totals()
 
         return receipt
 
-    def _apply_discount_campaign(
-        self,
-        campaign: Campaign,
-        receipt: Receipt,
-        product_discounts: Dict[str, List[Discount]],
-    ) -> None:
-        """Apply discount campaign to a receipt."""
-        rules = campaign
-        if isinstance(rules, DiscountRule):
-            if rules.applies_to == "product":
-                # Apply discount to specific products
-                for product_id in rules.product_ids:
-                    for item in receipt.products:
-                        if item.product_id == product_id:
-                            discount_amount = (item.unit_price * item.quantity) * (
-                                rules.discount_value / 100
-                            )
-                            discount = Discount(
-                                campaign_id=UUID(campaign.id),
-                                campaign_name=campaign.name,
-                                discount_amount=discount_amount,
-                            )
-                            product_discounts[product_id].append(discount)
+    def _apply_discount_rule(self, receipt: Receipt, campaign: Campaign) -> None:
+        """Apply a discount rule to the receipt."""
+        rule: DiscountRule = campaign.rules
 
-            elif rules.applies_to == "receipt" and rules.min_amount is not None:
-                # Apply discount to entire receipt if it meets the minimum amount
-                subtotal = sum(
-                    item.unit_price * item.quantity for item in receipt.products
-                )
-                if subtotal >= rules.min_amount:
-                    # Distribute discount proportionally to each item
-                    total_discount = subtotal * (rules.discount_value / 100)
-                    for item in receipt.products:
-                        item_subtotal = item.unit_price * item.quantity
-                        item_proportion = (
-                            item_subtotal / subtotal if subtotal > 0 else 0
-                        )
-                        item_discount = total_discount * item_proportion
+        # Different logic based on what the discount applies to
+        if rule.applies_to == "total":
+            # Discount applies to total if it meets minimum amount
+            if receipt.subtotal >= rule.min_amount:
+                discount_amount = receipt.subtotal * (rule.discount_value / 100)
 
-                        discount = Discount(
-                            campaign_id=UUID(campaign.id),
-                            campaign_name=campaign.name,
-                            discount_amount=item_discount,
-                        )
-                        product_discounts[str(item.product_id)].append(discount)
-
-    def _apply_buy_n_get_n_campaign(
-        self,
-        campaign: Campaign,
-        receipt: Receipt,
-        product_discounts: Dict[str, List[Discount]],
-    ) -> None:
-        """Apply buy N get N campaign to a receipt."""
-        rules = campaign.rules
-        if isinstance(rules, BuyNGetNRule):
-            # Count how many of the "buy" product are in the receipt
-            buy_quantity = 0
-            for item in receipt.products:
-                if item.product_id == rules.buy_product_id:
-                    buy_quantity += item.quantity
-
-            # Calculate how many free items the customer should get
-            if buy_quantity >= rules.buy_quantity:
-                multiple = buy_quantity // rules.buy_quantity
-                free_quantity = multiple * rules.get_quantity
-
-                if rules.get_product_id == rules.buy_product_id:
-                    for item in receipt.products:
-                        if item.product_id == rules.get_product_id:
-                            actual_free = min(
-                                free_quantity, item.quantity - buy_quantity
-                            )
-                            if actual_free > 0:
-                                discount_amount = item.unit_price * actual_free
-                                discount = Discount(
-                                    campaign_id=UUID(campaign.id),
-                                    campaign_name=campaign.name,
-                                    discount_amount=discount_amount,
-                                )
-                                product_discounts[str(item.product_id)].append(discount)
-                            break
-                else:
-                    # Look for the "get" product in the receipt
-                    for item in receipt.products:
-                        if item.product_id == rules.get_product_id:
-                            # Calculate discount for free items
-                            actual_free = min(free_quantity, item.quantity)
-                            if actual_free > 0:
-                                discount_amount = item.unit_price * actual_free
-                                discount = Discount(
-                                    campaign_id=UUID(campaign.id),
-                                    campaign_name=campaign.name,
-                                    discount_amount=discount_amount,
-                                )
-                                product_discounts[str(item.product_id)].append(discount)
-                            break
-
-    def _apply_combo_campaign(
-        self,
-        campaign: Campaign,
-        receipt: Receipt,
-        product_discounts: Dict[str, List[Discount]],
-    ) -> None:
-        """Apply combo campaign to a receipt."""
-        rules = campaign.rules
-        if isinstance(rules, ComboRule):
-            # Check if all required products are in the receipt
-            all_products_present = True
-            for product_id in rules.product_ids:
-                product_present = False
+                # Distribute discount proportionally across all items
+                total_item_price = sum(item.total_price for item in receipt.products)
                 for item in receipt.products:
-                    if item.product_id == product_id:
-                        product_present = True
-                        break
+                    item_discount = (item.total_price / total_item_price) * discount_amount
+                    item.discounts.append(
+                        Discount(
+                            campaign_id=campaign.id,
+                            campaign_name=campaign.name,
+                            discount_amount=round(item_discount, 2)
+                        )
+                    )
 
-                if not product_present:
-                    all_products_present = False
-                    break
+        elif rule.applies_to == "products":
+            # Discount applies to specific products
+            for item in receipt.products:
+                if str(item.product_id) in rule.product_ids:
+                    # Calculate discount
+                    discount_amount = item.total_price * (rule.discount_value / 100)
+                    item.discounts.append(
+                        Discount(
+                            campaign_id=campaign.id,
+                            campaign_name=campaign.name,
+                            discount_amount=round(discount_amount, 2)
+                        )
+                    )
 
-            if all_products_present:
-                # Apply discount to each product in the combo
-                for product_id in rules.product_ids:
-                    for item in receipt.products:
-                        if item.product_id == product_id:
-                            if rules.discount_type == "percentage":
-                                discount_amount = (item.unit_price * item.quantity) * (
-                                    rules.discount_value / 100
-                                )
-                            else:  # fixed amount
-                                # Distribute fixed discount amount proportionally
-                                discount_amount = rules.discount_value / len(
-                                    rules.product_ids
-                                )
+    def _apply_buy_n_get_n_rule(self, receipt: Receipt, campaign: Campaign) -> None:
+        """Apply a buy N get N rule to the receipt."""
+        rule: BuyNGetNRule = campaign.rules
 
-                            discount = Discount(
-                                campaign_id=UUID(campaign.id),
-                                campaign_name=campaign.name,
-                                discount_amount=discount_amount,
-                            )
-                            product_discounts[product_id].append(discount)
+        # Find the buy product and get product in the receipt
+        buy_item = None
+        get_item = None
+
+        for item in receipt.products:
+            if str(item.product_id) == rule.buy_product_id:
+                buy_item = item
+            if str(item.product_id) == rule.get_product_id:
+                get_item = item
+
+        # If both products are in the receipt, apply the discount
+        if buy_item and get_item:
+            # Calculate how many times the promotion applies
+            promotion_count = buy_item.quantity // rule.buy_quantity
+
+            if promotion_count > 0:
+                # Calculate discount amount (unit_price * quantity that gets discounted)
+                free_quantity = min(promotion_count * rule.get_quantity, get_item.quantity)
+                discount_amount = get_item.unit_price * free_quantity
+
+                get_item.discounts.append(
+                    Discount(
+                        campaign_id=campaign.id,
+                        campaign_name=campaign.name,
+                        discount_amount=round(discount_amount, 2)
+                    )
+                )
+
+    def _apply_combo_rule(self, receipt: Receipt, campaign: Campaign) -> None:
+        """Apply a combo rule to the receipt."""
+        rule: ComboRule = campaign.rules
+
+        # Check if all products in the combo are in the receipt
+        combo_products = set(rule.product_ids)
+        receipt_product_ids = {str(item.product_id) for item in receipt.products}
+
+        if combo_products.issubset(receipt_product_ids):
+            # All combo products are in the receipt
+            combo_items = [item for item in receipt.products if str(item.product_id) in combo_products]
+
+            # Calculate the discount
+            if rule.discount_type == "percentage":
+                # Apply percentage discount to each combo item
+                for item in combo_items:
+                    discount_amount = item.total_price * (rule.discount_value / 100)
+                    item.discounts.append(
+                        Discount(
+                            campaign_id=campaign.id,
+                            campaign_name=campaign.name,
+                            discount_amount=round(discount_amount, 2)
+                        )
+                    )
+            elif rule.discount_type == "fixed":
+                # Fixed amount discount divided proportionally
+                combo_total = sum(item.total_price for item in combo_items)
+                for item in combo_items:
+                    item_discount = (item.total_price / combo_total) * rule.discount_value
+                    item.discounts.append(
+                        Discount(
+                            campaign_id=campaign.id,
+                            campaign_name=campaign.name,
+                            discount_amount=round(item_discount, 2)
+                        )
+                    )

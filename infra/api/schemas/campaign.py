@@ -11,7 +11,7 @@ class DiscountRuleModel(BaseModel):
 
 
 class BuyNGetNRuleModel(BaseModel):
-    buy_product_id: UUID
+    buy_product_id: str
     buy_quantity: int
     get_product_id: str
     get_quantity: int
@@ -30,15 +30,14 @@ class CampaignCreate(BaseModel):
 
 
 class CampaignResponse(BaseModel):
-    id: UUID
+    id: str
     name: str
     campaign_type: str
     rules: Dict[str, Any]
+    is_active: bool = True
 
     class Config:
         orm_mode = True
-        arbitrary_types_allowed = True  # Allow arbitrary types
-
 
 class CampaignsResponse(BaseModel):
     campaigns: List[CampaignResponse]
