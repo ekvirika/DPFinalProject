@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 from uuid import UUID
 
 from core.models.campaign import Campaign
@@ -22,7 +22,7 @@ class CampaignService:
         return self.campaign_repository.create(name, campaign_type, rules)
 
     def get_campaign(self, campaign_id: UUID) -> Campaign:
-        # No validation here, repository will raise appropriate exceptions
+        """Get a campaign by ID."""
         return self.campaign_repository.get_by_id(campaign_id)
 
     def get_all_campaigns(self) -> List[Campaign]:

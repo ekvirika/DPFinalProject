@@ -1,4 +1,5 @@
 import logging
+from typing import cast
 from uuid import UUID
 
 from core.models.campaign import (
@@ -6,6 +7,7 @@ from core.models.campaign import (
     Campaign,
     CampaignType,
     ComboRule,
+    DiscountRule,
 )
 from core.models.receipt import Discount, Receipt, ReceiptItem
 from core.models.repositories.campaign_repository import CampaignRepository
@@ -19,9 +21,9 @@ logging.basicConfig(
 
 class DiscountService:
     def __init__(
-        self,
-        campaign_repository: CampaignRepository,
-        product_repository: ProductRepository,
+            self,
+            campaign_repository: CampaignRepository,
+            product_repository: ProductRepository,
     ):
         self.campaign_repository = campaign_repository
         self.product_repository = product_repository
@@ -73,11 +75,15 @@ class DiscountService:
         """Apply discount rule to the receipt."""
         logging.debug(f"Inside _apply_discount_rule for campaign: {campaign.name}")
 
-        rule = campaign.rules
+        # Ensure we're working with a DiscountRule by using type cast
+        if campaign.campaign_type != CampaignType.DISCOUNT:
+            return
+
+        rule = cast(DiscountRule, campaign.rules)
         logging.debug(f"Discount rule: {rule}")
         logging.info(receipt)
 
-        if rule.applies_to == "receipt" and receipt.subtotal >= rule.min_amount:
+        if rule.applies_to == "receipt" and rule.min_amount is not None and receipt.subtotal >= rule.min_amount:
             logging.info(f"Applying receipt-level discount: {rule.discount_value}%")
 
             # Calculate discount amount
@@ -126,7 +132,11 @@ class DiscountService:
 
     def _apply_buy_n_get_n_rule(self, receipt: Receipt, campaign: Campaign) -> None:
         """Apply a Buy N Get N rule to the receipt."""
-        rule: BuyNGetNRule = campaign.rules
+        # Type check to ensure we're using the correct rule type
+        if campaign.campaign_type != CampaignType.BUY_N_GET_N:
+            return
+
+        rule = cast(BuyNGetNRule, campaign.rules)
         logging.debug(f"Applying Buy N Get N Rule: {rule}")
 
         # Find the buy product in the receipt
@@ -160,7 +170,7 @@ class DiscountService:
             # If the "get" item is already in the receipt, increase its quantity
             get_item.quantity += free_quantity
             get_item.total_price += (
-                get_item.unit_price * free_quantity
+                    get_item.unit_price * free_quantity
             )  # Update total price
         else:
             # If the "get" item is not in the receipt, fetch it from the repository
@@ -209,7 +219,11 @@ class DiscountService:
 
     def _apply_combo_rule(self, receipt: Receipt, campaign: Campaign) -> None:
         """Apply a combo rule to the receipt."""
-        rule: ComboRule = campaign.rules
+        # Type check to ensure we're using the correct rule type
+        if campaign.campaign_type != CampaignType.COMBO:
+            return
+
+        rule = cast(ComboRule, campaign.rules)
         logging.debug(f"Applying Combo Rule: {rule}")
 
         # Check if all products in the combo are in the receipt
@@ -246,8 +260,8 @@ class DiscountService:
                 combo_total = sum(item.total_price for item in combo_items)
                 for item in combo_items:
                     item_discount = (
-                        item.total_price / combo_total
-                    ) * rule.discount_value
+                                            item.total_price / combo_total
+                                    ) * rule.discount_value
                     item.discounts.append(
                         Discount(
                             campaign_id=UUID(campaign.id),

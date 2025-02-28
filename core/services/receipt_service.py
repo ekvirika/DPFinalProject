@@ -88,7 +88,7 @@ class ReceiptService:
         return self.receipt_repository.update(receipt_id, updated_receipt)
 
     def remove_product(
-        self, receipt_id: UUID, product_id: UUID, quantity: int = None
+        self, receipt_id: UUID, product_id: UUID, quantity: int
     ) -> Optional[Receipt]:
         """Remove a product from a receipt and recalculate discounts."""
         receipt = self.receipt_repository.get(receipt_id)
@@ -122,7 +122,7 @@ class ReceiptService:
         updated_receipt = self.discount_service.apply_discounts(receipt)
 
         # Save the updated receipt
-        return self.receipt_repository.update(updated_receipt)
+        return self.receipt_repository.update(receipt_id, updated_receipt)
 
     def calculate_payment_quote(
         self, receipt_id: UUID, currency: Currency
