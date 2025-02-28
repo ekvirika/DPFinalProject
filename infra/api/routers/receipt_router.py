@@ -33,7 +33,8 @@ def create_receipt(
     if not new_receipt:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Cannot create receipt. Shift with ID '{receipt_data.shift_id}' not found or closed",
+            detail=f"Cannot create receipt. Shift with ID '{receipt_data.shift_id}'"
+                   f" not found or closed",
         )
     return {"receipt": new_receipt}
 
@@ -51,7 +52,8 @@ def add_product_to_receipt(
     if not updated_receipt:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Cannot add product. Receipt not found, closed, or product not found",
+            detail="Cannot add product. Receipt not found, closed,"
+                   " or product not found",
         )
     return {"receipt": updated_receipt}
 
@@ -84,7 +86,8 @@ def calculate_payment_quote(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported currency. Supported currencies are: {[c.value for c in Currency]}",
+            detail=f"Unsupported currency. Supported currencies are: "
+                   f"{[c.value for c in Currency]}",
         )
 
 
@@ -102,7 +105,8 @@ def add_payment(
         if not result:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot add payment. Receipt with ID '{receipt_id}' not found or closed",
+                detail=f"Cannot add payment. Receipt with ID '{receipt_id}'"
+                       f" not found or closed",
             )
 
         payment, updated_receipt = result
@@ -127,7 +131,8 @@ def add_payment(
     except ValueError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Unsupported currency. Supported currencies are: {[c.value for c in Currency]}",
+            detail=f"Unsupported currency. Supported currencies are: "
+                   f"{[c.value for c in Currency]}",
         )
 
 

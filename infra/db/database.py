@@ -94,7 +94,8 @@ class Database:
                 discount_rule_id TEXT NOT NULL,
                 product_id TEXT NOT NULL,
                 PRIMARY KEY (discount_rule_id, product_id),
-                FOREIGN KEY (discount_rule_id) REFERENCES discount_rules(id) ON DELETE CASCADE
+                FOREIGN KEY (discount_rule_id) REFERENCES discount_rules(id)
+                 ON DELETE CASCADE
             );
             """)
 
@@ -153,7 +154,8 @@ class Database:
                 campaign_id TEXT NOT NULL,
                 campaign_name TEXT NOT NULL,
                 discount_amount REAL NOT NULL,
-                FOREIGN KEY (receipt_item_id) REFERENCES receipt_items (id) ON DELETE CASCADE,
+                FOREIGN KEY (receipt_item_id) REFERENCES receipt_items
+                 (id) ON DELETE CASCADE,
                 FOREIGN KEY (campaign_id) REFERENCES campaigns (id)
             );
             """)
