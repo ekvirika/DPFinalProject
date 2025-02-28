@@ -27,7 +27,8 @@ class SQLiteReceiptRepository(ReceiptRepository):
             cursor = conn.cursor()
             cursor.execute(
                 """
-                INSERT INTO receipts (id, shift_id, status, subtotal, discount_amount, total)
+                INSERT INTO receipts (id, shift_id, status, subtotal, 
+                discount_amount, total)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
                 (
@@ -142,7 +143,8 @@ class SQLiteReceiptRepository(ReceiptRepository):
             cursor.execute(
                 """
                 INSERT INTO payments
-                (id, receipt_id, payment_amount, currency, total_in_gel, exchange_rate, status)
+                (id, receipt_id, payment_amount, currency, total_in_gel,
+                 exchange_rate, status)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
@@ -193,7 +195,8 @@ class SQLiteReceiptRepository(ReceiptRepository):
                 "DELETE FROM receipt_items WHERE receipt_id = ?", (str(receipt_id),)
             )
             cursor.execute(
-                "DELETE FROM receipt_item_discounts WHERE receipt_item_id IN (SELECT id FROM receipt_items WHERE receipt_id = ?)",
+                "DELETE FROM receipt_item_discounts WHERE receipt_item_id IN "
+                "(SELECT id FROM receipt_items WHERE receipt_id = ?)",
                 (str(receipt_id),),
             )
 
@@ -204,7 +207,8 @@ class SQLiteReceiptRepository(ReceiptRepository):
 
                 cursor.execute(
                     """INSERT INTO receipt_items 
-                       (id, receipt_id, product_id, quantity, unit_price, total_price, final_price) 
+                       (id, receipt_id, product_id, quantity, unit_price,
+                        total_price, final_price) 
                        VALUES (?, ?, ?, ?, ?, ?, ?)""",
                     (
                         item_id,
@@ -221,7 +225,8 @@ class SQLiteReceiptRepository(ReceiptRepository):
                 for discount in item.discounts:
                     cursor.execute(
                         """INSERT INTO receipt_item_discounts
-                           (receipt_item_id, campaign_id, campaign_name, discount_amount)
+                           (receipt_item_id, campaign_id, campaign_name,
+                            discount_amount)
                            VALUES (?, ?, ?, ?)""",
                         (
                             item_id,
@@ -270,7 +275,8 @@ class SQLiteReceiptRepository(ReceiptRepository):
 
             # Get the items for this receipt
             cursor.execute(
-                "SELECT id, product_id, quantity, unit_price FROM receipt_items WHERE receipt_id = ?",
+                "SELECT id, product_id, quantity, unit_price FROM receipt_items"
+                " WHERE receipt_id = ?",
                 (str(receipt_id),),
             )
             items_data = cursor.fetchall()
@@ -300,7 +306,6 @@ class SQLiteReceiptRepository(ReceiptRepository):
                         )
                     )
 
-                # Create receipt item - the total_price and final_price will be calculated in __post_init__
                 items.append(
                     ReceiptItem(
                         product_id=uuid.UUID(item_data[1]),
