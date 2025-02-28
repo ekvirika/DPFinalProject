@@ -21,9 +21,9 @@ logging.basicConfig(
 
 class DiscountService:
     def __init__(
-            self,
-            campaign_repository: CampaignRepository,
-            product_repository: ProductRepository,
+        self,
+        campaign_repository: CampaignRepository,
+        product_repository: ProductRepository,
     ):
         self.campaign_repository = campaign_repository
         self.product_repository = product_repository
@@ -45,8 +45,9 @@ class DiscountService:
                 f"Processing campaign: {campaign.name}, Type: {campaign.campaign_type}"
             )
             logging.debug(
-                f"Campaign type check: {campaign.campaign_type == 
-                                        CampaignType.DISCOUNT}"
+                f"Campaign type check: {
+                    campaign.campaign_type == CampaignType.DISCOUNT
+                }"
             )
 
             if campaign.campaign_type == CampaignType.DISCOUNT:
@@ -84,8 +85,11 @@ class DiscountService:
         logging.debug(f"Discount rule: {rule}")
         logging.info(receipt)
 
-        if (rule.applies_to == "receipt" and rule.min_amount is not None
-                and receipt.subtotal >= rule.min_amount):
+        if (
+            rule.applies_to == "receipt"
+            and rule.min_amount is not None
+            and receipt.subtotal >= rule.min_amount
+        ):
             logging.info(f"Applying receipt-level discount: {rule.discount_value}%")
 
             # Calculate discount amount
@@ -175,7 +179,7 @@ class DiscountService:
             # If the "get" item is already in the receipt, increase its quantity
             get_item.quantity += free_quantity
             get_item.total_price += (
-                    get_item.unit_price * free_quantity
+                get_item.unit_price * free_quantity
             )  # Update total price
         else:
             # If the "get" item is not in the receipt, fetch it from the repository
@@ -266,8 +270,8 @@ class DiscountService:
                 combo_total = sum(item.total_price for item in combo_items)
                 for item in combo_items:
                     item_discount = (
-                                            item.total_price / combo_total
-                                    ) * rule.discount_value
+                        item.total_price / combo_total
+                    ) * rule.discount_value
                     item.discounts.append(
                         Discount(
                             campaign_id=UUID(campaign.id),

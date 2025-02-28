@@ -14,9 +14,7 @@ class ReportService:
         self.report_repository = report_repository
         self.shift_repository = shift_repository
 
-    def generate_x_report(
-        self, shift_id: UUID, shift: ShiftService
-    ) -> ShiftReport:
+    def generate_x_report(self, shift_id: UUID, shift: ShiftService) -> ShiftReport:
         """Generate an X report for a shift."""
         if shift.shift_repository.get_by_id(shift_id) is None:
             raise ShiftNotFoundError(str(shift_id))

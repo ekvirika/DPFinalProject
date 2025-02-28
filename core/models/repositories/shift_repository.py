@@ -14,4 +14,3 @@ class ShiftRepository(Protocol):
     def update_status(
         self, shift_id: UUID, status: ShiftUpdate, closed_at: Optional[datetime] = None
     ) -> Shift: ...
-

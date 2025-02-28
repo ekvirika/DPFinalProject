@@ -28,4 +28,4 @@ def close_shift(
     shift_service: ShiftService = Depends(get_shift_service),  # Injecting service
 ) -> dict[str, Shift]:
     updated_shift = shift_service.close_shift(shift_id, shift_update)
-    return { "shift" : updated_shift}
+    return {"shift": updated_shift}

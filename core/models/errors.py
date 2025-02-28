@@ -143,7 +143,7 @@ class ShiftStatusValueError(POSException):
 
 
 class ShiftReportDoesntExistError(POSException):
-    def __init__(self, shift_id : str) -> None:
+    def __init__(self, shift_id: str) -> None:
         super().__init__(
             detail=f"This shift with id <{shift_id}> doesnt have receipts",
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,

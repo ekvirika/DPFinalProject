@@ -12,21 +12,10 @@ from runner.dependencies import AppContainer, get_app_container
 app = FastAPI()
 
 
-# from fastapi.middleware.cors import CORSMiddleware
-
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=["*"],  # Allows all origins
-#     allow_credentials=True,
-#     allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
-#     allow_headers=["*"],  # Allows all headers
-# )
-
-
 @lru_cache()
-def create_app_container() -> AppContainer:
+def create_app_container(db_path: str) -> AppContainer:
     """Create and cache the application container."""
-    return get_app_container("pos.db")
+    return get_app_container(db_path)
 
 
 # Include routers with prefixes and tags

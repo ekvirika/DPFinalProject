@@ -22,4 +22,3 @@ class ShiftService:
     def get_shift(self, shift_id: UUID) -> Shift:
         """Get a shift by ID."""
         return self.shift_repository.get_by_id(shift_id)
-

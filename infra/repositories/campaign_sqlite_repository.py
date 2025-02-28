@@ -42,7 +42,7 @@ class SQLiteCampaignRepository(CampaignRepository):
                 name=name, campaign_type=CampaignType(campaign_type), rules=rule_obj
             )
 
-            with (self.db.get_connection() as conn):
+            with self.db.get_connection() as conn:
                 # Start a transaction
                 conn.execute("BEGIN TRANSACTION")
                 cursor = conn.cursor()
@@ -74,8 +74,8 @@ class SQLiteCampaignRepository(CampaignRepository):
 
                     print(discount_rule.applies_to)
                     if (
-                            discount_rule.applies_to == "product" and
-                            discount_rule.product_ids
+                        discount_rule.applies_to == "product"
+                        and discount_rule.product_ids
                     ):
                         for product_id in discount_rule.product_ids:
                             cursor.execute(

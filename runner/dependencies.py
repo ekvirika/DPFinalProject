@@ -111,7 +111,7 @@ def get_app_container(db_path: str) -> AppContainer:
 
 
 # Convenience dependency provider functions
-DEFAULT_DB_PATH = "../infra/db/database.db"
+DEFAULT_DB_PATH = "pos.db"
 
 
 def get_receipt_service() -> ReceiptService:

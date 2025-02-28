@@ -13,7 +13,6 @@ class ReceiptRepository(Protocol):
         """Get receipt by ID"""
         pass
 
-
     def update_status(self, receipt_id: UUID, status: ReceiptStatus) -> Receipt:
         """Update receipt status"""
         pass

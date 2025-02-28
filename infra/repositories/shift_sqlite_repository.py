@@ -73,5 +73,3 @@ class SQLiteShiftRepository(ShiftRepository):
             conn.commit()
 
             return self.get_by_id(shift_id)
-
-

@@ -123,9 +123,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
 
             return receipt
 
-    def update_status(
-        self, receipt_id: UUID, status: ReceiptStatus
-    ) -> Receipt:
+    def update_status(self, receipt_id: UUID, status: ReceiptStatus) -> Receipt:
         """Update the status of a receipt."""
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
@@ -137,8 +135,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
 
         return self.get(receipt_id)
 
-    def add_payment(self, receipt_id: UUID, payment: Payment) ->\
-            Receipt:
+    def add_payment(self, receipt_id: UUID, payment: Payment) -> Receipt:
         """Add a payment to a receipt."""
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
