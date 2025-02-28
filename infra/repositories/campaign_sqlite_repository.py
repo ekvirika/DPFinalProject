@@ -49,8 +49,10 @@ class SQLiteCampaignRepository(CampaignRepository):
 
                 # Insert campaign
                 cursor.execute(
-                    "INSERT INTO campaigns (id, name, campaign_type, is_active) VALUES (?, ?, ?, ?)",
-                    (campaign.id, campaign.name, campaign.campaign_type.value, 1),
+                    "INSERT INTO campaigns (id, name, campaign_type,"
+                    " is_active) VALUES (?, ?, ?, ?)",
+                    (campaign.id, campaign.name,
+                     campaign.campaign_type.value, 1),
                 )
 
                 # Insert rule based on campaign type
@@ -58,7 +60,8 @@ class SQLiteCampaignRepository(CampaignRepository):
 
                 if campaign_type == CampaignType.DISCOUNT.value:
                     cursor.execute(
-                        "INSERT INTO discount_rules (id, campaign_id, discount_value, applies_to, min_amount) "
+                        "INSERT INTO discount_rules (id, campaign_id, "
+                        "discount_value, applies_to, min_amount) "
                         "VALUES (?, ?, ?, ?, ?)",
                         (
                             rule_id,
@@ -77,13 +80,17 @@ class SQLiteCampaignRepository(CampaignRepository):
                         for product_id in rule_obj.product_ids:
                             print("current product ID------------------", product_id)
                             cursor.execute(
-                                "INSERT INTO discount_rule_products (discount_rule_id, product_id) VALUES (?, ?)",
+                                "INSERT INTO discount_rule_products "
+                                "(discount_rule_id, product_id) VALUES (?, ?)",
                                 (rule_id, product_id),
                             )
 
                 elif campaign_type == CampaignType.BUY_N_GET_N.value:
                     cursor.execute(
-                        "INSERT INTO buy_n_get_n_rules (id, campaign_id, buy_product_id, buy_quantity, get_product_id, get_quantity) VALUES (?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO buy_n_get_n_rules (id, campaign_id"
+                        ", buy_product_id,"
+                        " buy_quantity, get_product_id, get_quantity)"
+                        " VALUES (?, ?, ?, ?, ?, ?)",
                         (
                             rule_id,
                             campaign.id,
@@ -96,7 +103,8 @@ class SQLiteCampaignRepository(CampaignRepository):
 
                 elif campaign_type == CampaignType.COMBO.value:
                     cursor.execute(
-                        "INSERT INTO combo_rules (id, campaign_id, discount_type, discount_value) VALUES (?, ?, ?, ?)",
+                        "INSERT INTO combo_rules (id, campaign_id, discount_type,"
+                        " discount_value) VALUES (?, ?, ?, ?)",
                         (
                             rule_id,
                             campaign.id,
@@ -108,7 +116,8 @@ class SQLiteCampaignRepository(CampaignRepository):
                     # Insert product IDs for combo
                     for product_id in rule_obj.product_ids:
                         cursor.execute(
-                            "INSERT INTO combo_rule_products (combo_rule_id, product_id) VALUES (?, ?)",
+                            "INSERT INTO combo_rule_products "
+                            "(combo_rule_id, product_id) VALUES (?, ?)",
                             (rule_id, product_id),
                         )
 
@@ -158,7 +167,8 @@ class SQLiteCampaignRepository(CampaignRepository):
                     product_ids = []
                     if rule_row["applies_to"] == "product":
                         cursor.execute(
-                            "SELECT product_id FROM discount_rule_products WHERE discount_rule_id = ?",
+                            "SELECT product_id FROM discount_rule_products "
+                            "WHERE discount_rule_id = ?",
                             (rule_row["id"],),
                         )
                         product_ids = [row["product_id"] for row in cursor.fetchall()]
@@ -179,7 +189,8 @@ class SQLiteCampaignRepository(CampaignRepository):
 
                     if not rule_row:
                         raise CampaignNotFoundException(
-                            f"Buy N Get N rule for campaign ID '{campaign_id}' not found"
+                            f"Buy N Get N rule for campaign ID "
+                            f"'{campaign_id}' not found"
                         )
 
                     rule_obj = BuyNGetNRule(
@@ -203,7 +214,8 @@ class SQLiteCampaignRepository(CampaignRepository):
 
                     # Get product IDs for combo
                     cursor.execute(
-                        "SELECT product_id FROM combo_rule_products WHERE combo_rule_id = ?",
+                        "SELECT product_id FROM combo_rule_products"
+                        " WHERE combo_rule_id = ?",
                         (rule_row["id"],),
                     )
                     product_ids = [row["product_id"] for row in cursor.fetchall()]
