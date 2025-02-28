@@ -152,17 +152,23 @@ class DiscountService:
             logging.debug("Not enough items to apply the promotion.")
             return
 
-        logging.debug(f"Promotion applies {promotion_count} times, giving {free_quantity} free items.")
+        logging.debug(
+            f"Promotion applies {promotion_count} times, giving {free_quantity} free items."
+        )
 
         if get_item:
             # If the "get" item is already in the receipt, increase its quantity
             get_item.quantity += free_quantity
-            get_item.total_price += get_item.unit_price * free_quantity  # Update total price
+            get_item.total_price += (
+                get_item.unit_price * free_quantity
+            )  # Update total price
         else:
             # If the "get" item is not in the receipt, fetch it from the repository
             get_product = self.product_repository.get_by_id(UUID(rule.get_product_id))
             if not get_product:
-                logging.warning(f"Get product {rule.get_product_id} not found in repository.")
+                logging.warning(
+                    f"Get product {rule.get_product_id} not found in repository."
+                )
                 return
 
             # Create a new receipt item for the free product
@@ -188,14 +194,18 @@ class DiscountService:
         get_item.final_price = get_item.total_price - discount_amount
 
         # Update receipt totals correctly
-        receipt.subtotal = sum(item.total_price for item in receipt.products)  # Include all products
+        receipt.subtotal = sum(
+            item.total_price for item in receipt.products
+        )  # Include all products
         receipt.discount_amount = sum(
-            sum(discount.discount_amount for discount in item.discounts) for item in receipt.products
+            sum(discount.discount_amount for discount in item.discounts)
+            for item in receipt.products
         )
         receipt.total = receipt.subtotal - receipt.discount_amount
 
         logging.info(
-            f"Updated receipt: subtotal={receipt.subtotal}, discount={receipt.discount_amount}, total={receipt.total}")
+            f"Updated receipt: subtotal={receipt.subtotal}, discount={receipt.discount_amount}, total={receipt.total}"
+        )
 
     def _apply_combo_rule(self, receipt: Receipt, campaign: Campaign) -> None:
         """Apply a combo rule to the receipt."""

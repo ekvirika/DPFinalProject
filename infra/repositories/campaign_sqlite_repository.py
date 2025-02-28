@@ -123,7 +123,7 @@ class SQLiteCampaignRepository(CampaignRepository):
 
     def get_by_id(self, campaign_id: UUID) -> Optional[Campaign]:
         try:
-            print("campaign id: " , campaign_id)
+            print("campaign id: ", campaign_id)
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
 

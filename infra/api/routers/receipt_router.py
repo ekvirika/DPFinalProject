@@ -34,7 +34,7 @@ def create_receipt(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Cannot create receipt. Shift with ID '{receipt_data.shift_id}'"
-                   f" not found or closed",
+            f" not found or closed",
         )
     return {"receipt": new_receipt}
 
@@ -53,7 +53,7 @@ def add_product_to_receipt(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot add product. Receipt not found, closed,"
-                   " or product not found",
+            " or product not found",
         )
     return {"receipt": updated_receipt}
 
@@ -87,7 +87,7 @@ def calculate_payment_quote(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unsupported currency. Supported currencies are: "
-                   f"{[c.value for c in Currency]}",
+            f"{[c.value for c in Currency]}",
         )
 
 
@@ -106,7 +106,7 @@ def add_payment(
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"Cannot add payment. Receipt with ID '{receipt_id}'"
-                       f" not found or closed",
+                f" not found or closed",
             )
 
         payment, updated_receipt = result
@@ -132,7 +132,7 @@ def add_payment(
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unsupported currency. Supported currencies are: "
-                   f"{[c.value for c in Currency]}",
+            f"{[c.value for c in Currency]}",
         )
 
 
