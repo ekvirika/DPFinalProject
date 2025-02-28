@@ -57,7 +57,7 @@ class ExchangeRateNotFoundError(POSException):
 
 
 class CampaignNotFoundError(POSException):
-    def __init__(self, campaign_id: str):
+    def __init__(self, campaign_id: str) -> None:
         super().__init__(
             detail=f"Campaign with id {campaign_id} not found",
             status_code=status.HTTP_404_NOT_FOUND,
@@ -66,7 +66,7 @@ class CampaignNotFoundError(POSException):
 
 
 class CampaignValidationError(POSException):
-    def __init__(self, message: str):
+    def __init__(self, message: str) -> None:
         super().__init__(
             detail=message,
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -75,7 +75,7 @@ class CampaignValidationError(POSException):
 
 
 class CampaignDatabaseError(POSException):
-    def __init__(self, message: str):
+    def __init__(self, message: str) -> None:
         super().__init__(
             detail=message,
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -84,7 +84,7 @@ class CampaignDatabaseError(POSException):
 
 
 class CampaignNotFoundException(HTTPException):
-    def __init__(self, campaign_id):
+    def __init__(self, campaign_id: str) -> None:
         super().__init__(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Campaign with ID '{campaign_id}' not found",
@@ -92,7 +92,7 @@ class CampaignNotFoundException(HTTPException):
 
 
 class ProductNotFoundException(HTTPException):
-    def __init__(self, product_id):
+    def __init__(self, product_id: str) -> None:
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Product with ID '{product_id}' not found",
@@ -100,7 +100,7 @@ class ProductNotFoundException(HTTPException):
 
 
 class InvalidCampaignTypeException(HTTPException):
-    def __init__(self, campaign_type):
+    def __init__(self, campaign_type: str) -> None:
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Unknown campaign type: {campaign_type}",
@@ -108,7 +108,7 @@ class InvalidCampaignTypeException(HTTPException):
 
 
 class InvalidCampaignRulesException(HTTPException):
-    def __init__(self, message) -> None:
+    def __init__(self, message: str) -> None:
         super().__init__(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=message,
@@ -116,7 +116,7 @@ class InvalidCampaignRulesException(HTTPException):
 
 
 class ShiftNotFoundError(POSException):
-    def __init__(self, shift_id: str):
+    def __init__(self, shift_id: str) -> None:
         super().__init__(
             detail=f"Shift with id {shift_id} not found",
             status_code=status.HTTP_404_NOT_FOUND,
@@ -125,7 +125,7 @@ class ShiftNotFoundError(POSException):
 
 
 class ShiftStatusError(POSException):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             detail="Shift is already closed",
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -134,7 +134,7 @@ class ShiftStatusError(POSException):
 
 
 class ShiftStatusValueError(POSException):
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__(
             detail="Invalid status. Must be 'closed'",
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
