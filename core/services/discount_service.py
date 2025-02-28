@@ -7,7 +7,7 @@ from core.models.campaign import (
     CampaignType,
     ComboRule,
 )
-from core.models.receipt import Discount, Receipt
+from core.models.receipt import Discount, Receipt, ReceiptItem
 from core.models.repositories.campaign_repository import CampaignRepository
 from core.models.repositories.product_repository import ProductRepository
 
@@ -107,7 +107,7 @@ class DiscountService:
                         f"Added discount of {item_discount} to item with product ID {item.product_id}"
                     )
 
-        elif rule.applies_to == "products":
+        elif rule.applies_to == "product":
             logging.info(
                 f"Checking product-specific discounts for {len(rule.product_ids)} products"
             )
@@ -125,41 +125,77 @@ class DiscountService:
                     )
 
     def _apply_buy_n_get_n_rule(self, receipt: Receipt, campaign: Campaign) -> None:
-        """Apply a buy N get N rule to the receipt."""
+        """Apply a Buy N Get N rule to the receipt."""
         rule: BuyNGetNRule = campaign.rules
         logging.debug(f"Applying Buy N Get N Rule: {rule}")
 
-        # Find the buy product and get product in the receipt
+        # Find the buy product in the receipt
         buy_item = None
         get_item = None
 
         for item in receipt.products:
-            if str(item.product_id) == rule.buy_product_id:
+            if item.product_id == UUID(rule.buy_product_id):
                 buy_item = item
-            if str(item.product_id) == rule.get_product_id:
+            if item.product_id == UUID(rule.get_product_id):
                 get_item = item
 
-        # If both products are in the receipt, apply the discount
-        if buy_item and get_item:
-            promotion_count = buy_item.quantity // rule.buy_quantity
-            logging.debug(f"Promotion applies {promotion_count} times")
+        if not buy_item:
+            # If the buy product isn't in the receipt, no discount applies
+            logging.debug(f"Buy product {rule.buy_product_id} is not in the receipt.")
+            return
 
-            if promotion_count > 0:
-                free_quantity = min(
-                    promotion_count * rule.get_quantity, get_item.quantity
-                )
-                discount_amount = get_item.unit_price * free_quantity
+        # Calculate how many "get" items should be given for free
+        promotion_count = buy_item.quantity // rule.buy_quantity
+        free_quantity = promotion_count * rule.get_quantity
 
-                get_item.discounts.append(
-                    Discount(
-                        campaign_id=UUID(campaign.id),
-                        campaign_name=campaign.name,
-                        discount_amount=round(discount_amount, 2),
-                    )
-                )
-                logging.info(
-                    f"Applied Buy N Get N discount of {discount_amount} to {get_item.product_id}"
-                )
+        if promotion_count <= 0:
+            logging.debug("Not enough items to apply the promotion.")
+            return
+
+        logging.debug(f"Promotion applies {promotion_count} times, giving {free_quantity} free items.")
+
+        if get_item:
+            # If the "get" item is already in the receipt, increase its quantity
+            get_item.quantity += free_quantity
+            get_item.total_price += get_item.unit_price * free_quantity  # Update total price
+        else:
+            # If the "get" item is not in the receipt, fetch it from the repository
+            get_product = self.product_repository.get_by_id(UUID(rule.get_product_id))
+            if not get_product:
+                logging.warning(f"Get product {rule.get_product_id} not found in repository.")
+                return
+
+            # Create a new receipt item for the free product
+            get_item = ReceiptItem(
+                product_id=get_product.id,
+                quantity=free_quantity,
+                unit_price=get_product.price,  # Normal price
+                discounts=[],
+            )
+            receipt.products.append(get_item)
+
+        # Apply the discount for the free items
+        discount_amount = get_item.unit_price * free_quantity
+        get_item.discounts.append(
+            Discount(
+                campaign_id=UUID(campaign.id),
+                campaign_name=campaign.name,
+                discount_amount=round(discount_amount, 2),
+            )
+        )
+
+        # Adjust the final price of the free item to reflect the discount
+        get_item.final_price = get_item.total_price - discount_amount
+
+        # Update receipt totals correctly
+        receipt.subtotal = sum(item.total_price for item in receipt.products)  # Include all products
+        receipt.discount_amount = sum(
+            sum(discount.discount_amount for discount in item.discounts) for item in receipt.products
+        )
+        receipt.total = receipt.subtotal - receipt.discount_amount
+
+        logging.info(
+            f"Updated receipt: subtotal={receipt.subtotal}, discount={receipt.discount_amount}, total={receipt.total}")
 
     def _apply_combo_rule(self, receipt: Receipt, campaign: Campaign) -> None:
         """Apply a combo rule to the receipt."""
@@ -170,6 +206,8 @@ class DiscountService:
         combo_products = set(rule.product_ids)
         receipt_product_ids = {str(item.product_id) for item in receipt.products}
 
+        logging.info(combo_products)
+        logging.info(receipt_product_ids)
         if combo_products.issubset(receipt_product_ids):
             logging.info(f"All combo products present in receipt: {combo_products}")
 

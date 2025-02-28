@@ -123,6 +123,7 @@ class SQLiteCampaignRepository(CampaignRepository):
 
     def get_by_id(self, campaign_id: UUID) -> Optional[Campaign]:
         try:
+            print("campaign id: " , campaign_id)
             with self.db.get_connection() as conn:
                 cursor = conn.cursor()
 
@@ -155,7 +156,7 @@ class SQLiteCampaignRepository(CampaignRepository):
 
                     # Get product IDs if applies_to is 'products'
                     product_ids = []
-                    if rule_row["applies_to"] == "products":
+                    if rule_row["applies_to"] == "product":
                         cursor.execute(
                             "SELECT product_id FROM discount_rule_products WHERE discount_rule_id = ?",
                             (rule_row["id"],),
