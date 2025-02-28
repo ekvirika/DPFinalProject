@@ -45,7 +45,8 @@ class DiscountService:
                 f"Processing campaign: {campaign.name}, Type: {campaign.campaign_type}"
             )
             logging.debug(
-                f"Campaign type check: {campaign.campaign_type == CampaignType.DISCOUNT}"
+                f"Campaign type check: {campaign.campaign_type == 
+                                        CampaignType.DISCOUNT}"
             )
 
             if campaign.campaign_type == CampaignType.DISCOUNT:
@@ -83,7 +84,8 @@ class DiscountService:
         logging.debug(f"Discount rule: {rule}")
         logging.info(receipt)
 
-        if rule.applies_to == "receipt" and rule.min_amount is not None and receipt.subtotal >= rule.min_amount:
+        if (rule.applies_to == "receipt" and rule.min_amount is not None
+                and receipt.subtotal >= rule.min_amount):
             logging.info(f"Applying receipt-level discount: {rule.discount_value}%")
 
             # Calculate discount amount
@@ -110,12 +112,14 @@ class DiscountService:
                         )
                     )
                     logging.info(
-                        f"Added discount of {item_discount} to item with product ID {item.product_id}"
+                        f"Added discount of {item_discount} to item with"
+                        f" product ID {item.product_id}"
                     )
 
         elif rule.applies_to == "product":
             logging.info(
-                f"Checking product-specific discounts for {len(rule.product_ids)} products"
+                f"Checking product-specific discounts for"
+                f" {len(rule.product_ids)} products"
             )
             for item in receipt.products:
                 if str(item.product_id) in rule.product_ids:
@@ -163,7 +167,8 @@ class DiscountService:
             return
 
         logging.debug(
-            f"Promotion applies {promotion_count} times, giving {free_quantity} free items."
+            f"Promotion applies {promotion_count} times, "
+            f"giving {free_quantity} free items."
         )
 
         if get_item:
@@ -214,7 +219,8 @@ class DiscountService:
         receipt.total = receipt.subtotal - receipt.discount_amount
 
         logging.info(
-            f"Updated receipt: subtotal={receipt.subtotal}, discount={receipt.discount_amount}, total={receipt.total}"
+            f"Updated receipt: subtotal={receipt.subtotal}, "
+            f"discount={receipt.discount_amount}, total={receipt.total}"
         )
 
     def _apply_combo_rule(self, receipt: Receipt, campaign: Campaign) -> None:
@@ -270,5 +276,6 @@ class DiscountService:
                         )
                     )
                     logging.info(
-                        f"Applied fixed discount of {item_discount} to {item.product_id}"
+                        f"Applied fixed discount of {item_discount}"
+                        f" to {item.product_id}"
                     )
