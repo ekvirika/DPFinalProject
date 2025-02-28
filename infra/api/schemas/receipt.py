@@ -40,7 +40,6 @@ class PaymentResponse(BaseModel):
     #     self.change = self.payment_amount - self.total_in_requested_currency
 
 
-
 class ReceiptResponse(BaseModel):
     id: UUID
     shift_id: UUID

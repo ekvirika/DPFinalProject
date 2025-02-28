@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional, Protocol
 from uuid import UUID
 
-from core.models.shift import Shift, ShiftStatus
+from core.models.shift import Shift
 from infra.api.schemas.shift import ShiftUpdate
 
 

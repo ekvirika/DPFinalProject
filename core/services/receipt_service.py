@@ -1,5 +1,5 @@
 from typing import List, Optional, Tuple
-from uuid import UUID, uuid4
+from uuid import UUID
 
 from core.models.errors import ShiftNotFoundError
 from core.models.receipt import (
@@ -7,8 +7,8 @@ from core.models.receipt import (
     Payment,
     Quote,
     Receipt,
-    ReceiptStatus,
     ReceiptItem,
+    ReceiptStatus,
 )
 from core.models.repositories.payment_repository import PaymentRepository
 from core.models.repositories.product_repository import ProductRepository
@@ -21,13 +21,13 @@ from core.services.exchange_rate_service import ExchangeRateService
 
 class ReceiptService:
     def __init__(
-            self,
-            receipt_repository: ReceiptRepository,
-            product_repository: ProductRepository,
-            shift_repository: ShiftRepository,
-            discount_service: DiscountService,
-            exchange_service: ExchangeRateService,
-            payment_repository: PaymentRepository,
+        self,
+        receipt_repository: ReceiptRepository,
+        product_repository: ProductRepository,
+        shift_repository: ShiftRepository,
+        discount_service: DiscountService,
+        exchange_service: ExchangeRateService,
+        payment_repository: PaymentRepository,
     ):
         self.receipt_repository = receipt_repository
         self.product_repository = product_repository
@@ -49,7 +49,7 @@ class ReceiptService:
         return self.receipt_repository.get(receipt_id)
 
     def add_product(
-            self, receipt_id: UUID, product_id: UUID, quantity: int
+        self, receipt_id: UUID, product_id: UUID, quantity: int
     ) -> Optional[Receipt]:
         """Add a product to a receipt with automatic discount application."""
         receipt = self.receipt_repository.get(receipt_id)
@@ -62,14 +62,15 @@ class ReceiptService:
 
         # Check if product already exists in receipt
         existing_item = next(
-            (item for item in receipt.products if item.product_id == product_id),
-            None
+            (item for item in receipt.products if item.product_id == product_id), None
         )
 
         if existing_item:
             # Update quantity of existing item
             existing_item.quantity += quantity
-            existing_item.total_price = existing_item.unit_price * existing_item.quantity
+            existing_item.total_price = (
+                existing_item.unit_price * existing_item.quantity
+            )
         else:
             # Create a new receipt item
             new_item = ReceiptItem(
@@ -79,6 +80,7 @@ class ReceiptService:
             )
             receipt.products.append(new_item)
 
+        receipt.recalculate_totals()
         # Apply all applicable discounts
         updated_receipt = self.discount_service.apply_discounts(receipt)
 
@@ -86,7 +88,7 @@ class ReceiptService:
         return self.receipt_repository.update(receipt_id, updated_receipt)
 
     def remove_product(
-            self, receipt_id: UUID, product_id: UUID, quantity: int = None
+        self, receipt_id: UUID, product_id: UUID, quantity: int = None
     ) -> Optional[Receipt]:
         """Remove a product from a receipt and recalculate discounts."""
         receipt = self.receipt_repository.get(receipt_id)
@@ -95,8 +97,12 @@ class ReceiptService:
 
         # Find the product in the receipt
         item_index = next(
-            (i for i, item in enumerate(receipt.products) if item.product_id == product_id),
-            None
+            (
+                i
+                for i, item in enumerate(receipt.products)
+                if item.product_id == product_id
+            ),
+            None,
         )
 
         if item_index is None:
@@ -119,7 +125,7 @@ class ReceiptService:
         return self.receipt_repository.update(updated_receipt)
 
     def calculate_payment_quote(
-            self, receipt_id: UUID, currency: Currency
+        self, receipt_id: UUID, currency: Currency
     ) -> Optional[Quote]:
         """Calculate payment quote for a receipt in a specific currency."""
         receipt = self.receipt_repository.get(receipt_id)
@@ -133,7 +139,7 @@ class ReceiptService:
         return quote
 
     def add_payment(
-            self, receipt_id: UUID, amount: float, currency_name: str
+        self, receipt_id: UUID, amount: float, currency_name: str
     ) -> Optional[Tuple[Payment, Receipt]]:
         """Add a payment to a receipt and close it if fully paid."""
         # Ensure receipt_id is UUID
@@ -176,9 +182,10 @@ class ReceiptService:
 
         return payment, updated_receipt
 
-    def get_receipts_by_shift(self, shift_id: UUID, shift: ShiftRepository) -> List[Receipt]:
+    def get_receipts_by_shift(
+        self, shift_id: UUID, shift: ShiftRepository
+    ) -> List[Receipt]:
         """Get all receipts for a shift."""
         if shift.get_by_id(shift_id) is None:
             raise ShiftNotFoundError(str(shift_id))
         return self.receipt_repository.get_receipts_by_shift(shift_id)
-

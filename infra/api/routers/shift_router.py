@@ -2,10 +2,10 @@
 from typing import Dict
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends
 from starlette import status
 
-from core.models.shift import Shift, ShiftStatus
+from core.models.shift import Shift
 from core.services.shift_service import ShiftService  # Import the service
 from infra.api.schemas.shift import ShiftResponse, ShiftUpdate
 from runner.dependencies import get_shift_service

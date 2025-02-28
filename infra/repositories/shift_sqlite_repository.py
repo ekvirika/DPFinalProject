@@ -2,11 +2,15 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
+from core.models.errors import (
+    ShiftNotFoundError,
+    ShiftStatusError,
+    ShiftStatusValueError,
+)
 from core.models.repositories.shift_repository import ShiftRepository
 from core.models.shift import Shift, ShiftStatus
-from infra.db.database import Database
-from core.models.errors import ShiftStatusError, ShiftNotFoundError, ShiftStatusValueError
 from infra.api.schemas.shift import ShiftUpdate
+from infra.db.database import Database
 
 
 class SQLiteShiftRepository(ShiftRepository):
@@ -46,9 +50,8 @@ class SQLiteShiftRepository(ShiftRepository):
             )
 
     def update_status(
-            self, shift_id: UUID, status: ShiftUpdate, closed_at: Optional[datetime] = None
+        self, shift_id: UUID, status: ShiftUpdate, closed_at: Optional[datetime] = None
     ) -> Shift:
-
         try:
             status_enum = ShiftStatus(status.status)
         except ValueError:

@@ -79,8 +79,8 @@ def get_app_container(db_path: str) -> AppContainer:
     shift_service = ShiftService(shift_repository)
 
     discount_service = DiscountService(
-        campaign_repository=campaign_repository, # Added campaign_repository,
-        product_repository=product_repository
+        campaign_repository=campaign_repository,  # Added campaign_repository,
+        product_repository=product_repository,
     )
 
     receipt_service = ReceiptService(
@@ -106,7 +106,7 @@ def get_app_container(db_path: str) -> AppContainer:
         exchange_service=exchange_service,
         report_service=report_service,
         shift_service=shift_service,
-        discount_service=discount_service
+        discount_service=discount_service,
     )
 
 

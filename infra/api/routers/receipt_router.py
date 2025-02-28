@@ -14,7 +14,8 @@ from infra.api.schemas.receipt import (
     QuoteRequest,
     QuoteResponse,
     ReceiptCreate,
-    ReceiptResponse, ReceiptPaymentResponse,
+    ReceiptPaymentResponse,
+    ReceiptResponse,
 )
 from runner.dependencies import get_receipt_service
 

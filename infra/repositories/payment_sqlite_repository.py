@@ -51,13 +51,14 @@ class SQLitePaymentRepository(PaymentRepository):
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
-                "UPDATE payments SET status = ? WHERE id = ?", (status,
-                                                                str(payment_id))
+                "UPDATE payments SET status = ? WHERE id = ?", (status, str(payment_id))
             )
             conn.commit()
 
             if cursor.rowcount > 0:
-                cursor.execute("SELECT * FROM payments WHERE id = ?", (str(payment_id),))
+                cursor.execute(
+                    "SELECT * FROM payments WHERE id = ?", (str(payment_id),)
+                )
                 row = cursor.fetchone()
 
                 if row:
@@ -76,8 +77,9 @@ class SQLitePaymentRepository(PaymentRepository):
     def get_by_receipt(self, receipt_id: UUID) -> List[Payment]:
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM payments WHERE receipt_id = ?",
-                           (str(receipt_id),))
+            cursor.execute(
+                "SELECT * FROM payments WHERE receipt_id = ?", (str(receipt_id),)
+            )
             rows = cursor.fetchall()
 
             return [

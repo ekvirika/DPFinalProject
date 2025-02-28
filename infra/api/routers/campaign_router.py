@@ -1,24 +1,32 @@
-from fastapi import APIRouter, Depends, HTTPException
-from typing import Dict, List, Any
+from typing import Any, Dict, List
+from uuid import UUID
 
-from core.models.campaign import Campaign, CampaignType
-from core.models.errors import ProductNotFoundException, InvalidCampaignRulesException, CampaignNotFoundException
+from fastapi import APIRouter, Depends, HTTPException
+
+from core.models.campaign import Campaign
+from core.models.errors import (
+    CampaignNotFoundException,
+    InvalidCampaignRulesException,
+)
 from core.services.campaign_service import CampaignService
-from core.services.discount_service import DiscountService
 from infra.api.schemas.campaign import CampaignCreate, CampaignResponse
-from runner.dependencies import get_campaign_service, get_discount_calculation_service
+from runner.dependencies import get_campaign_service
 
 router = APIRouter()
 
 
 @router.post("/", response_model=Dict[str, CampaignResponse])
 def create_campaign(
-        campaign: CampaignCreate,
-        campaign_service: CampaignService = Depends(get_campaign_service),
+    campaign: CampaignCreate,
+    campaign_service: CampaignService = Depends(get_campaign_service),
 ) -> Dict[str, Any]:
     try:
-        rules_dict = campaign.rules.dict() if hasattr(campaign.rules, 'dict') else campaign.rules
-        new_campaign = campaign_service.create_campaign(campaign.name, campaign.campaign_type, rules_dict)
+        rules_dict = (
+            campaign.rules.dict() if hasattr(campaign.rules, "dict") else campaign.rules
+        )
+        new_campaign = campaign_service.create_campaign(
+            campaign.name, campaign.campaign_type, rules_dict
+        )
 
         # Convert to response format
         return {"campaign": _campaign_to_response(new_campaign)}
@@ -30,8 +38,7 @@ def create_campaign(
 
 @router.get("/{campaign_id}", response_model=Dict[str, CampaignResponse])
 def get_campaign(
-        campaign_id: str,
-        campaign_service: CampaignService = Depends(get_campaign_service)
+    campaign_id: UUID, campaign_service: CampaignService = Depends(get_campaign_service)
 ) -> Dict[str, Any]:
     try:
         campaign = campaign_service.get_campaign(campaign_id)
@@ -44,19 +51,20 @@ def get_campaign(
 
 @router.get("/", response_model=Dict[str, List[CampaignResponse]])
 def list_campaigns(
-        campaign_service: CampaignService = Depends(get_campaign_service)
+    campaign_service: CampaignService = Depends(get_campaign_service),
 ) -> Dict[str, List[Dict[str, Any]]]:
     try:
         campaigns = campaign_service.get_all_campaigns()
-        return {"campaigns": [_campaign_to_response(campaign) for campaign in campaigns]}
+        return {
+            "campaigns": [_campaign_to_response(campaign) for campaign in campaigns]
+        }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.delete("/{campaign_id}")
 def deactivate_campaign(
-        campaign_id: str,
-        campaign_service: CampaignService = Depends(get_campaign_service)
+    campaign_id: UUID, campaign_service: CampaignService = Depends(get_campaign_service)
 ) -> Dict[str, Any]:
     try:
         campaign_service.deactivate_campaign(campaign_id)
@@ -74,5 +82,5 @@ def _campaign_to_response(campaign: Campaign) -> Dict[str, Any]:
         "name": campaign.name,
         "campaign_type": campaign.campaign_type.value,
         "rules": campaign.rules.__dict__,
-        "is_active": campaign.is_active
+        "is_active": campaign.is_active,
     }

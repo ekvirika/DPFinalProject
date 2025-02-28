@@ -1,8 +1,7 @@
 from typing import Dict
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException
-from starlette import status
+from fastapi import APIRouter, Depends
 
 from core.models.report import SalesReport, ShiftReport
 from core.services.report_service import ReportService
@@ -16,8 +15,8 @@ router = APIRouter()
 @router.get("/x-reports", response_model=Dict[str, XReportResponse])
 def get_x_report(
     shift_id: UUID,
-        report_service: ReportService = Depends(get_report_service),
-        shift_service: ShiftService = Depends(get_shift_service)
+    report_service: ReportService = Depends(get_report_service),
+    shift_service: ShiftService = Depends(get_shift_service),
 ) -> dict[str, ShiftReport]:
     report = report_service.generate_x_report(shift_id, shift_service)
     return {"x-report": report}

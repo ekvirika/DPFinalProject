@@ -1,7 +1,7 @@
 from typing import Any, Dict, List, Optional, Union
-from uuid import UUID
 
 from pydantic import BaseModel
+
 
 class DiscountRuleModel(BaseModel):
     discount_value: float
@@ -39,6 +39,6 @@ class CampaignResponse(BaseModel):
     class Config:
         orm_mode = True
 
+
 class CampaignsResponse(BaseModel):
     campaigns: List[CampaignResponse]
-

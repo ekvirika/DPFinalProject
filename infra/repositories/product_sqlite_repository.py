@@ -1,10 +1,10 @@
 from typing import List, Optional
 from uuid import UUID, uuid4
 
+from core.models.errors import ProductNotFoundError
 from core.models.product import Product
 from core.models.repositories.product_repository import ProductRepository
 from infra.db.database import Database
-from core.models.errors import ProductNotFoundError
 
 
 class SQLiteProductRepository(ProductRepository):
@@ -12,7 +12,7 @@ class SQLiteProductRepository(ProductRepository):
         self.db = db
 
     def create(self, name: str, price: float) -> Product:
-        product = Product(id = uuid4(), name=name, price=price)
+        product = Product(id=uuid4(), name=name, price=price)
 
         with self.db.get_connection() as conn:
             cursor = conn.cursor()

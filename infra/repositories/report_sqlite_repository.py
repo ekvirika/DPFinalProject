@@ -40,7 +40,8 @@ class SQLiteReportRepository(ReportRepository):
                     with self.db.get_connection() as conn:
                         cursor = conn.cursor()
                         cursor.execute(
-                            "SELECT name FROM products WHERE id = ?", (str(item.product_id),)
+                            "SELECT name FROM products WHERE id = ?",
+                            (str(item.product_id),),
                         )
                         product_row = cursor.fetchone()
 

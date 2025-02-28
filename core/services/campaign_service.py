@@ -1,8 +1,7 @@
 from typing import Any, Dict, List
 from uuid import UUID
 
-from core.models.campaign import Campaign, CampaignType
-from core.models.errors import CampaignValidationError
+from core.models.campaign import Campaign
 from core.models.repositories.campaign_repository import CampaignRepository
 from core.models.repositories.product_repository import ProductRepository
 
@@ -32,4 +31,3 @@ class CampaignService:
     def deactivate_campaign(self, campaign_id: UUID) -> None:
         # No validation here, repository will raise appropriate exceptions
         self.campaign_repository.deactivate(campaign_id)
-
