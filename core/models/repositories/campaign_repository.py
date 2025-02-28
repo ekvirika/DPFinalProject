@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Protocol
+from typing import Any, Dict, List, Protocol
 from uuid import UUID
 
 from core.models.campaign import Campaign

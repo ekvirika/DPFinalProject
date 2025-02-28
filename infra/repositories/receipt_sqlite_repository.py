@@ -1,7 +1,8 @@
 import uuid
-from typing import List, Optional
+from typing import List
 from uuid import UUID, uuid4
 
+from core.models.errors import ReceiptNotFoundError
 from core.models.receipt import (
     Currency,
     Discount,
@@ -44,7 +45,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
 
         return Receipt(shift_id=shift_id, id=receipt_id)
 
-    def get(self, receipt_id: UUID) -> Optional[Receipt]:
+    def get(self, receipt_id: UUID) -> Receipt:
         """Get a receipt by ID with all its items, discounts, and payments."""
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
@@ -57,7 +58,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
             receipt_row = cursor.fetchone()
 
             if not receipt_row:
-                return None
+                raise ReceiptNotFoundError(str(receipt_id))
 
             receipt = Receipt(
                 id=UUID(receipt_row["id"]),
@@ -124,7 +125,7 @@ class SQLiteReceiptRepository(ReceiptRepository):
 
     def update_status(
         self, receipt_id: UUID, status: ReceiptStatus
-    ) -> Optional[Receipt]:
+    ) -> Receipt:
         """Update the status of a receipt."""
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
@@ -136,7 +137,8 @@ class SQLiteReceiptRepository(ReceiptRepository):
 
         return self.get(receipt_id)
 
-    def add_payment(self, receipt_id: UUID, payment: Payment) -> Optional[Receipt]:
+    def add_payment(self, receipt_id: UUID, payment: Payment) ->\
+            Receipt:
         """Add a payment to a receipt."""
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
@@ -330,11 +332,12 @@ class SQLiteReceiptRepository(ReceiptRepository):
                     payments.append(
                         Payment(
                             id=uuid.UUID(pay[0]),
-                            payment_amount=pay[1],
-                            currency=pay[2],
-                            total_in_gel=pay[3],
-                            exchange_rate=pay[4],
-                            status=pay[5],
+                            receipt_id=uuid.UUID(pay[1]),
+                            payment_amount=pay[2],
+                            currency=pay[3],
+                            total_in_gel=pay[4],
+                            exchange_rate=pay[5],
+                            status=pay[6],
                         )
                     )
 
@@ -347,5 +350,5 @@ class SQLiteReceiptRepository(ReceiptRepository):
                 discount_amount=receipt_data[4],
                 total=receipt_data[5],
                 products=items,
-                payments=payments if hasattr(updated_receipt, "payments") else None,
+                payments=payments if hasattr(updated_receipt, "payments") else [],
             )

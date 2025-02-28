@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Union, cast
 from uuid import UUID, uuid4
 
 from core.models.campaign import (
@@ -49,75 +49,72 @@ class SQLiteCampaignRepository(CampaignRepository):
 
                 # Insert campaign
                 cursor.execute(
-                    "INSERT INTO campaigns (id, name, campaign_type,"
-                    " is_active) VALUES (?, ?, ?, ?)",
-                    (campaign.id, campaign.name,
-                     campaign.campaign_type.value, 1),
+                    "INSERT INTO campaigns (id, name, campaign_type, is_active) VALUES (?, ?, ?, ?)",
+                    (campaign.id, campaign.name, campaign.campaign_type.value, 1),
                 )
 
                 # Insert rule based on campaign type
                 rule_id = str(uuid4())
 
                 if campaign_type == CampaignType.DISCOUNT.value:
+                    # Use cast to tell mypy that rule_obj is a DiscountRule in this block
+                    discount_rule = cast(DiscountRule, rule_obj)
                     cursor.execute(
-                        "INSERT INTO discount_rules (id, campaign_id, "
-                        "discount_value, applies_to, min_amount) "
+                        "INSERT INTO discount_rules (id, campaign_id, discount_value, applies_to, min_amount) "
                         "VALUES (?, ?, ?, ?, ?)",
                         (
                             rule_id,
                             campaign.id,
-                            rule_obj.discount_value,
-                            rule_obj.applies_to,
-                            rule_obj.min_amount,
+                            discount_rule.discount_value,
+                            discount_rule.applies_to,
+                            discount_rule.min_amount,
                         ),
                     )
 
-                    print("Aqa var;", rule_obj)
-                    print(rule_obj.applies_to)
+                    print("Aqa var;", discount_rule)
+                    print(discount_rule.applies_to)
                     # Insert product IDs if applicable
-                    if rule_obj.applies_to == "product" and rule_obj.product_ids:
+                    if discount_rule.applies_to == "product" and discount_rule.product_ids:
                         print("---------------------w=efrdw")
-                        for product_id in rule_obj.product_ids:
+                        for product_id in discount_rule.product_ids:
                             print("current product ID------------------", product_id)
                             cursor.execute(
-                                "INSERT INTO discount_rule_products "
-                                "(discount_rule_id, product_id) VALUES (?, ?)",
+                                "INSERT INTO discount_rule_products (discount_rule_id, product_id) VALUES (?, ?)",
                                 (rule_id, product_id),
                             )
 
                 elif campaign_type == CampaignType.BUY_N_GET_N.value:
+                    # Use cast to tell mypy that rule_obj is a BuyNGetNRule in this block
+                    buy_n_get_n_rule = cast(BuyNGetNRule, rule_obj)
                     cursor.execute(
-                        "INSERT INTO buy_n_get_n_rules (id, campaign_id"
-                        ", buy_product_id,"
-                        " buy_quantity, get_product_id, get_quantity)"
-                        " VALUES (?, ?, ?, ?, ?, ?)",
+                        "INSERT INTO buy_n_get_n_rules (id, campaign_id, buy_product_id, buy_quantity, get_product_id, get_quantity) VALUES (?, ?, ?, ?, ?, ?)",
                         (
                             rule_id,
                             campaign.id,
-                            rule_obj.buy_product_id,
-                            rule_obj.buy_quantity,
-                            rule_obj.get_product_id,
-                            rule_obj.get_quantity,
+                            buy_n_get_n_rule.buy_product_id,
+                            buy_n_get_n_rule.buy_quantity,
+                            buy_n_get_n_rule.get_product_id,
+                            buy_n_get_n_rule.get_quantity,
                         ),
                     )
 
                 elif campaign_type == CampaignType.COMBO.value:
+                    # Use cast to tell mypy that rule_obj is a ComboRule in this block
+                    combo_rule = cast(ComboRule, rule_obj)
                     cursor.execute(
-                        "INSERT INTO combo_rules (id, campaign_id, discount_type,"
-                        " discount_value) VALUES (?, ?, ?, ?)",
+                        "INSERT INTO combo_rules (id, campaign_id, discount_type, discount_value) VALUES (?, ?, ?, ?)",
                         (
                             rule_id,
                             campaign.id,
-                            rule_obj.discount_type,
-                            rule_obj.discount_value,
+                            combo_rule.discount_type,
+                            combo_rule.discount_value,
                         ),
                     )
 
                     # Insert product IDs for combo
-                    for product_id in rule_obj.product_ids:
+                    for product_id in combo_rule.product_ids:
                         cursor.execute(
-                            "INSERT INTO combo_rule_products "
-                            "(combo_rule_id, product_id) VALUES (?, ?)",
+                            "INSERT INTO combo_rule_products (combo_rule_id, product_id) VALUES (?, ?)",
                             (rule_id, product_id),
                         )
 
@@ -130,7 +127,7 @@ class SQLiteCampaignRepository(CampaignRepository):
             # Catch any exceptions and wrap them
             raise CampaignDatabaseError(f"Failed to create campaign: {str(e)}") from e
 
-    def get_by_id(self, campaign_id: UUID) -> Optional[Campaign]:
+    def get_by_id(self, campaign_id: UUID) -> Campaign:
         try:
             print("campaign id: ", campaign_id)
             with self.db.get_connection() as conn:
@@ -149,7 +146,7 @@ class SQLiteCampaignRepository(CampaignRepository):
 
                 # Get rule based on campaign type
                 campaign_type = campaign_row["campaign_type"]
-                rule_obj = None
+                rule_obj: Union[DiscountRule, BuyNGetNRule, ComboRule]
 
                 if campaign_type == CampaignType.DISCOUNT.value:
                     cursor.execute(
@@ -167,8 +164,7 @@ class SQLiteCampaignRepository(CampaignRepository):
                     product_ids = []
                     if rule_row["applies_to"] == "product":
                         cursor.execute(
-                            "SELECT product_id FROM discount_rule_products "
-                            "WHERE discount_rule_id = ?",
+                            "SELECT product_id FROM discount_rule_products WHERE discount_rule_id = ?",
                             (rule_row["id"],),
                         )
                         product_ids = [row["product_id"] for row in cursor.fetchall()]
@@ -189,8 +185,7 @@ class SQLiteCampaignRepository(CampaignRepository):
 
                     if not rule_row:
                         raise CampaignNotFoundException(
-                            f"Buy N Get N rule for campaign ID "
-                            f"'{campaign_id}' not found"
+                            f"Buy N Get N rule for campaign ID '{campaign_id}' not found"
                         )
 
                     rule_obj = BuyNGetNRule(
@@ -214,8 +209,7 @@ class SQLiteCampaignRepository(CampaignRepository):
 
                     # Get product IDs for combo
                     cursor.execute(
-                        "SELECT product_id FROM combo_rule_products"
-                        " WHERE combo_rule_id = ?",
+                        "SELECT product_id FROM combo_rule_products WHERE combo_rule_id = ?",
                         (rule_row["id"],),
                     )
                     product_ids = [row["product_id"] for row in cursor.fetchall()]
@@ -254,7 +248,7 @@ class SQLiteCampaignRepository(CampaignRepository):
                 cursor.execute("SELECT * FROM campaigns")
                 campaign_rows = cursor.fetchall()
 
-                campaigns = []
+                campaigns: List[Campaign] = []
                 for campaign_row in campaign_rows:
                     # Get the campaign by ID (reuse existing method)
                     campaign = self.get_by_id(UUID(campaign_row["id"]))
@@ -299,7 +293,7 @@ class SQLiteCampaignRepository(CampaignRepository):
                 cursor.execute("SELECT * FROM campaigns WHERE is_active = 1")
                 campaign_rows = cursor.fetchall()
 
-                campaigns = []
+                campaigns: List[Campaign] = []
                 for campaign_row in campaign_rows:
                     # Get the campaign by ID (reuse existing method)
                     campaign = self.get_by_id(UUID(campaign_row["id"]))

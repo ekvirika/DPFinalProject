@@ -74,24 +74,4 @@ class SQLiteShiftRepository(ShiftRepository):
 
             return self.get_by_id(shift_id)
 
-    def get_current_open(self) -> Optional[Shift]:
-        with self.db.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT * FROM shifts WHERE status = ? "
-                "ORDER BY created_at DESC LIMIT 1",
-                (ShiftStatus.OPEN.value,),
-            )
-            row = cursor.fetchone()
 
-            if row:
-                return Shift(
-                    id=row["id"],
-                    status=ShiftStatus(row["status"]),
-                    created_at=datetime.fromisoformat(row["created_at"]),
-                    closed_at=datetime.fromisoformat(row["closed_at"])
-                    if row["closed_at"]
-                    else None,
-                )
-
-            return None

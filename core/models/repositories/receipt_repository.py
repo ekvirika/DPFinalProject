@@ -1,7 +1,7 @@
-from typing import Dict, List, Protocol
+from typing import List, Protocol
 from uuid import UUID
 
-from core.models.receipt import Discount, Payment, Receipt, ReceiptStatus
+from core.models.receipt import Payment, Receipt, ReceiptStatus
 
 
 class ReceiptRepository(Protocol):
@@ -13,16 +13,6 @@ class ReceiptRepository(Protocol):
         """Get receipt by ID"""
         pass
 
-    def add_product(
-        self,
-        receipt_id: UUID,
-        product_id: UUID,
-        quantity: int,
-        unit_price: float,
-        discounts: List[Dict[str, Discount]],  # Add type arguments
-    ) -> Receipt:
-        """Add item to receipt"""
-        pass
 
     def update_status(self, receipt_id: UUID, status: ReceiptStatus) -> Receipt:
         """Update receipt status"""

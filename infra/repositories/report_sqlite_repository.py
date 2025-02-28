@@ -1,6 +1,6 @@
-from typing import Optional
 from uuid import UUID
 
+from core.models.errors import ShiftReportDoesntExistError
 from core.models.receipt import (
     Currency,
     ItemSold,
@@ -19,11 +19,11 @@ class SQLiteReportRepository(ReportRepository):
         self.db = db
         self.receipt_repository = receipt_repository
 
-    def generate_shift_report(self, shift_id: UUID) -> Optional[ShiftReport]:
+    def generate_shift_report(self, shift_id: UUID) -> ShiftReport:
         receipts = self.receipt_repository.get_receipts_by_shift(shift_id)
 
         if not receipts:
-            return None
+            raise ShiftReportDoesntExistError(str(shift_id))
 
         # Count receipts
         receipt_count = len(receipts)
