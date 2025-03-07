@@ -39,10 +39,16 @@ class DiscountService:
         for item in receipt.products:
             item.discounts = []
 
+        # Clear receipt-level discounts
+        receipt.discounts = []
+
         # Store potential discounts for each item to later select the best one
         potential_discounts: Dict[UUID, List[Discount]] = {
             item.product_id: [] for item in receipt.products
         }
+
+        # Store potential receipt-level discounts
+        potential_receipt_discounts: List[Discount] = []
 
         # Apply each campaign type
         for campaign in active_campaigns:
@@ -57,7 +63,9 @@ class DiscountService:
 
             if campaign.campaign_type == CampaignType.DISCOUNT:
                 logging.info("Applying discount rule...")
-                self._apply_discount_rule(receipt, campaign, potential_discounts)
+                self._apply_discount_rule(
+                    receipt, campaign, potential_discounts, potential_receipt_discounts
+                )
                 logging.info("Discount rule applied")
             elif campaign.campaign_type == CampaignType.BUY_N_GET_N:
                 self._apply_buy_n_get_n_rule(receipt, campaign, potential_discounts)
@@ -82,6 +90,19 @@ class DiscountService:
                     f"from campaign {best_discount.campaign_name}"
                 )
 
+        # Apply the best receipt-level discount if any exist
+        if potential_receipt_discounts:
+            best_receipt_discount = max(
+                potential_receipt_discounts,
+                key=lambda d: d.discount_amount,
+            )
+            receipt.discounts = [best_receipt_discount]
+            logging.info(
+                f"Applied best receipt discount of "
+                f"{best_receipt_discount.discount_amount} "
+                f"from campaign {best_receipt_discount.campaign_name}"
+            )
+
         # Calculate total discount and update receipt
         total_discount = sum(
             sum(discount.discount_amount for discount in item.discounts)
@@ -102,6 +123,7 @@ class DiscountService:
         receipt: Receipt,
         campaign: Campaign,
         potential_discounts: Dict[UUID, List[Discount]],
+        potential_receipt_discounts: List[Discount],
     ) -> None:
         """Apply discount rule to the receipt and store in potential discounts."""
         logging.debug(f"Inside _apply_discount_rule for campaign: {campaign.name}")
@@ -127,8 +149,8 @@ class DiscountService:
             )
             logging.debug(f"Total discount calculated: {discount_amount}")
 
-            # Distribute discount proportionally across all items
-            receipt.discounts.append(
+            # Store the receipt-level discount as a potential discount
+            potential_receipt_discounts.append(
                 Discount(UUID(campaign.id), campaign.name, discount_amount)
             )
 
