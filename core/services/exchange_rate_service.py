@@ -31,6 +31,7 @@ class ExchangeRateService:
                 if "rates" in data:
                     self.rates_cache = data["rates"]
                     self.last_update = current_time
+                    print(self.rates_cache)
             except Exception:
                 # If API call fails, use hardcoded rates as fallback
                 self.rates_cache = {

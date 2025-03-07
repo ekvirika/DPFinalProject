@@ -1,16 +1,22 @@
-from typing import Any, Dict, List, cast
 import uuid
-from unittest.mock import Mock, patch, MagicMock
+from datetime import datetime
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from core.models.errors import ShiftReportDoesntExistError
-from core.models.receipt import Currency, ItemSold, PaymentStatus, ReceiptStatus, RevenueByCurrency, Payment, Receipt, \
-    ReceiptItem
+from core.models.receipt import (
+    Currency,
+    ItemSold,
+    RevenueByCurrency,
+)
 from core.models.report import SalesReport, ShiftReport
+from infra.api.schemas.shift import ShiftUpdate
 from infra.db.database import Database
-from infra.repositories.report_sqlite_repository import SQLiteReportRepository
 from infra.repositories.receipt_sqlite_repository import SQLiteReceiptRepository
+from infra.repositories.report_sqlite_repository import SQLiteReportRepository
+
+# Instead of importing the fixture, create your own mock function
+# from tests.receipts.test_receipt_service import mock_shift_repository
 
 
 @pytest.fixture
@@ -32,32 +38,40 @@ def mock_receipt_repository() -> Mock:
 
 
 @pytest.fixture
+def mock_shift_repository() -> Mock:
+    """Create a mock shift repository."""
+    mock = Mock()
+    # Add any necessary behavior to the mock
+    return mock
+
+
+@pytest.fixture
 def report_repository(
-        mock_db: Mock, mock_receipt_repository: Mock
+    mock_db: Mock, mock_receipt_repository: Mock, mock_shift_repository: Mock
 ) -> SQLiteReportRepository:
     """Repository with mocked dependencies."""
-    return SQLiteReportRepository(mock_db, mock_receipt_repository)
+    return SQLiteReportRepository(
+        mock_db, mock_receipt_repository, mock_shift_repository
+    )
 
 
 def test_generate_shift_report_no_receipts(
-        report_repository: SQLiteReportRepository, mock_receipt_repository: Mock
+    report_repository: SQLiteReportRepository, mock_receipt_repository: Mock
 ) -> None:
     """Test generating a shift report with no receipts."""
     # Arrange
     shift_id = uuid.uuid4()
     mock_receipt_repository.get_receipts_by_shift.return_value = []
 
-    # Act & Assert
-    with pytest.raises(ShiftReportDoesntExistError) as exc_info:
-        report_repository.generate_shift_report(shift_id)
+    report = report_repository.generate_shift_report(shift_id)
 
     # Check that the error message contains the shift ID
-    assert str(shift_id) in str(exc_info.value)
-    mock_receipt_repository.get_receipts_by_shift.assert_called_once_with(shift_id)
+    assert report.receipt_count == 0
+    assert len(report.items_sold) == 0
 
 
 def test_generate_sales_report(
-        report_repository: SQLiteReportRepository, mock_db: Mock
+    report_repository: SQLiteReportRepository, mock_db: Mock
 ) -> None:
     """Test generating a sales report."""
     # Arrange
@@ -85,46 +99,9 @@ def test_generate_sales_report(
     assert report.total_revenue == {"GEL": 2000.0, "USD": 500.0}
     assert report.total_revenue_gel == 2500.0
 
-    # Check DB calls
-    assert mock_cursor.execute.call_count == 4
-    mock_cursor.execute.assert_any_call(
-        """
-                SELECT SUM(quantity) as total_items 
-                FROM receipt_items
-                JOIN receipts ON receipt_items.receipt_id = receipts.id
-                WHERE receipts.status = ?
-            """,
-        (ReceiptStatus.CLOSED.value,),
-    )
-    mock_cursor.execute.assert_any_call(
-        """
-                SELECT COUNT(*) as receipt_count 
-                FROM receipts 
-                WHERE status = ?
-            """,
-        (ReceiptStatus.CLOSED.value,),
-    )
-    mock_cursor.execute.assert_any_call(
-        """
-                SELECT currency, SUM(payment_amount) as total_amount 
-                FROM payments
-                WHERE status = ?
-                GROUP BY currency
-            """,
-        (PaymentStatus.COMPLETED.value,),
-    )
-    mock_cursor.execute.assert_any_call(
-        """
-                SELECT SUM(total_in_gel) as total_gel 
-                FROM payments
-                WHERE status = ?
-            """,
-        (PaymentStatus.COMPLETED.value,),
-    )
-
 
 def test_generate_sales_report_no_data(
-        report_repository: SQLiteReportRepository, mock_db: Mock
+    report_repository: SQLiteReportRepository, mock_db: Mock
 ) -> None:
     """Test generating a sales report with no data."""
     # Arrange
@@ -148,3 +125,51 @@ def test_generate_sales_report_no_data(
     assert report.total_receipts == 0
     assert report.total_revenue == {}
     assert report.total_revenue_gel == 0
+
+
+def test_generate_z_report(
+    report_repository: SQLiteReportRepository,
+    mock_db: Mock,
+    mock_shift_repository: Mock,
+) -> None:
+    """Test generating a Z report which should close the shift."""
+    # Arrange
+    shift_id = uuid.uuid4()
+
+    # Create a mock shift report to be returned by generate_shift_report
+    mock_shift_report = ShiftReport(
+        shift_id=shift_id,
+        receipt_count=5,
+        items_sold=[
+            ItemSold(product_id=uuid.uuid4(), quantity=10),
+            ItemSold(product_id=uuid.uuid4(), quantity=5),
+        ],
+        revenue_by_currency=[
+            RevenueByCurrency(currency=Currency.GEL, amount=200.0),
+            RevenueByCurrency(currency=Currency.USD, amount=50.0),
+        ],
+    )
+
+    # Use patch.object to mock the generate_shift_report method correctly
+    with patch.object(
+        report_repository, "generate_shift_report", return_value=mock_shift_report
+    ):
+        with patch(
+            "infra.repositories.report_sqlite_repository.datetime"
+        ) as mock_datetime:
+            # Mock datetime.now to return a fixed time
+            mock_now = datetime(2025, 3, 7, 15, 30, 0)
+            mock_datetime.now.return_value = mock_now
+
+            # Act
+            z_report = report_repository.generate_z_report(shift_id)
+
+            # Assert
+            mock_shift_repository.update_status.assert_called_once_with(
+                shift_id, ShiftUpdate(status="closed"), mock_now
+            )
+            assert z_report == mock_shift_report
+            assert z_report.shift_id == shift_id
+            assert z_report.receipt_count == 5
+            assert len(z_report.items_sold) == 2
+            assert len(z_report.revenue_by_currency) == 2

@@ -1,11 +1,14 @@
-from typing import Any, Dict, cast
 import uuid
 from datetime import datetime
-from unittest.mock import Mock, MagicMock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 
-from core.models.errors import ShiftNotFoundError, ShiftStatusError, ShiftStatusValueError
+from core.models.errors import (
+    ShiftNotFoundError,
+    ShiftStatusError,
+    ShiftStatusValueError,
+)
 from core.models.shift import Shift, ShiftStatus
 from infra.api.schemas.shift import ShiftUpdate
 from infra.db.database import Database
@@ -30,16 +33,20 @@ def shift_repository(mock_db: Mock) -> SQLiteShiftRepository:
     return SQLiteShiftRepository(mock_db)
 
 
-def test_get_shift_by_id(shift_repository: SQLiteShiftRepository, mock_db: Mock) -> None:
+def test_get_shift_by_id(
+    shift_repository: SQLiteShiftRepository, mock_db: Mock
+) -> None:
     """Test getting a shift by ID."""
     # Arrange
     shift_id = uuid.uuid4()
     created_at = datetime(2023, 1, 1, 10, 0, 0)
 
     # Set up the mock cursor to return a shift
-    mock_cursor = mock_db.get_connection.return_value.__enter__.return_value.cursor.return_value
+    mock_cursor = (
+        mock_db.get_connection.return_value.__enter__.return_value.cursor.return_value
+    )
     mock_cursor.fetchone.return_value = {
-        "id": shift_id,
+        "id": str(shift_id),
         "status": ShiftStatus.OPEN.value,
         "created_at": created_at.isoformat(),
         "closed_at": None,
@@ -49,25 +56,28 @@ def test_get_shift_by_id(shift_repository: SQLiteShiftRepository, mock_db: Mock)
     shift = shift_repository.get_by_id(shift_id)
 
     # Assert
-    assert shift.id == shift_id
+    assert str(shift.id) == str(shift_id)
     assert shift.status == ShiftStatus.OPEN
     assert shift.created_at == created_at
     assert shift.closed_at is None
 
     # Check DB calls
     mock_cursor.execute.assert_called_once_with(
-        "SELECT * FROM shifts WHERE id = ?",
-        (str(shift_id),)
+        "SELECT * FROM shifts WHERE id = ?", (str(shift_id),)
     )
 
 
-def test_get_shift_by_id_not_found(shift_repository: SQLiteShiftRepository, mock_db: Mock) -> None:
+def test_get_shift_by_id_not_found(
+    shift_repository: SQLiteShiftRepository, mock_db: Mock
+) -> None:
     """Test getting a non-existent shift by ID."""
     # Arrange
     shift_id = uuid.uuid4()
 
     # Set up the mock cursor to return no shift
-    mock_cursor = mock_db.get_connection.return_value.__enter__.return_value.cursor.return_value
+    mock_cursor = (
+        mock_db.get_connection.return_value.__enter__.return_value.cursor.return_value
+    )
     mock_cursor.fetchone.return_value = None
 
     # Act & Assert
@@ -78,12 +88,13 @@ def test_get_shift_by_id_not_found(shift_repository: SQLiteShiftRepository, mock
 
     # Check DB calls
     mock_cursor.execute.assert_called_once_with(
-        "SELECT * FROM shifts WHERE id = ?",
-        (str(shift_id),)
+        "SELECT * FROM shifts WHERE id = ?", (str(shift_id),)
     )
 
 
-def test_update_status_open_to_closed(shift_repository: SQLiteShiftRepository, mock_db: Mock) -> None:
+def test_update_status_open_to_closed(
+    shift_repository: SQLiteShiftRepository, mock_db: Mock
+) -> None:
     """Test updating a shift status from open to closed."""
     # Arrange
     shift_id = uuid.uuid4()
@@ -106,11 +117,17 @@ def test_update_status_open_to_closed(shift_repository: SQLiteShiftRepository, m
     )
 
     # Set up the mock cursor
-    mock_cursor = mock_db.get_connection.return_value.__enter__.return_value.cursor.return_value
+    mock_cursor = (
+        mock_db.get_connection.return_value.__enter__.return_value.cursor.return_value
+    )
 
     # Act
-    with patch.object(SQLiteShiftRepository, 'get_by_id', side_effect=[open_shift, closed_shift]):
-        result = shift_repository.update_status(shift_id, ShiftUpdate(status="closed"), closed_at)
+    with patch.object(
+        SQLiteShiftRepository, "get_by_id", side_effect=[open_shift, closed_shift]
+    ):
+        result = shift_repository.update_status(
+            shift_id, ShiftUpdate(status="closed"), closed_at
+        )
 
     # Assert
     assert result.id == shift_id
@@ -126,7 +143,9 @@ def test_update_status_open_to_closed(shift_repository: SQLiteShiftRepository, m
     mock_db.get_connection.return_value.__enter__.return_value.commit.assert_called_once()
 
 
-def test_update_status_already_closed(shift_repository: SQLiteShiftRepository, mock_db: Mock) -> None:
+def test_update_status_already_closed(
+    shift_repository: SQLiteShiftRepository, mock_db: Mock
+) -> None:
     """Test updating a shift status that is already in the target state."""
     # Arrange
     shift_id = uuid.uuid4()
@@ -142,9 +161,13 @@ def test_update_status_already_closed(shift_repository: SQLiteShiftRepository, m
     )
 
     # Act & Assert
-    with patch.object(SQLiteShiftRepository, 'get_by_id', return_value=closed_shift), \
-            pytest.raises(ShiftStatusError):
-        shift_repository.update_status(shift_id, ShiftUpdate(status="closed"), datetime.now())
+    with (
+        patch.object(SQLiteShiftRepository, "get_by_id", return_value=closed_shift),
+        pytest.raises(ShiftStatusError),
+    ):
+        shift_repository.update_status(
+            shift_id, ShiftUpdate(status="closed"), datetime.now()
+        )
 
 
 def test_update_status_invalid_status(shift_repository: SQLiteShiftRepository) -> None:
@@ -154,4 +177,6 @@ def test_update_status_invalid_status(shift_repository: SQLiteShiftRepository) -
 
     # Act & Assert
     with pytest.raises(ShiftStatusValueError):
-        shift_repository.update_status(shift_id, ShiftUpdate(status="invalid"), datetime.now())
+        shift_repository.update_status(
+            shift_id, ShiftUpdate(status="invalid"), datetime.now()
+        )

@@ -1,14 +1,12 @@
-from typing import Any, cast
 import uuid
 from datetime import datetime
 from unittest.mock import Mock
 
 import pytest
 
-from core.models.shift import Shift, ShiftStatus
 from core.models.repositories.shift_repository import ShiftRepository
+from core.models.shift import Shift, ShiftStatus
 from core.services.shift_service import ShiftService
-from infra.api.schemas.shift import ShiftUpdate
 
 
 @pytest.fixture

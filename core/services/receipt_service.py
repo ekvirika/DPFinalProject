@@ -5,6 +5,7 @@ from core.models.errors import ShiftNotFoundError
 from core.models.receipt import (
     Currency,
     Payment,
+    PaymentStatus,
     Quote,
     Receipt,
     ReceiptItem,
@@ -149,11 +150,10 @@ class ReceiptService:
         if not receipt or receipt.status == ReceiptStatus.CLOSED:
             return None
 
-        # Convert currency_name (str) to Currency enum
         try:
             currency = Currency[currency_name]
         except KeyError:
-            return None  # Handle invalid currency input
+            return None
 
         # Calculate the payment in GEL
         rate = self.exchange_service.get_exchange_rate(currency, Currency.GEL)
@@ -163,22 +163,18 @@ class ReceiptService:
             receipt_id, amount, currency, receipt.total, rate
         )
 
-        # Add payment to receipt
         updated_receipt = self.receipt_repository.get(receipt_id)
-
-        # Check if receipt is fully paid
-        if updated_receipt:
-            total_paid = sum(
-                p.payment_amount
-                * self.exchange_service.get_exchange_rate(p.currency, Currency.GEL)
-                for p in updated_receipt.payments
+        if payment.payment_amount * rate > receipt.total:
+            payment = self.payment_repository.update_status(
+                payment.id, PaymentStatus.COMPLETED.value
             )
-
-            if total_paid >= updated_receipt.total:
-                # Close the receipt
-                updated_receipt = self.receipt_repository.update_status(
-                    receipt_id, ReceiptStatus.CLOSED
-                )
+            updated_receipt = self.receipt_repository.update_status(
+                receipt_id, ReceiptStatus.CLOSED
+            )
+        else:
+            payment = self.payment_repository.update_status(
+                payment.id, PaymentStatus.FAILED.value
+            )
 
         return payment, updated_receipt
 

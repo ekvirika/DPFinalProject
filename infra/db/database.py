@@ -160,6 +160,19 @@ class Database:
             );
             """)
 
+            cursor.execute("""
+            CREATE TABLE IF NOT EXISTS receipt_discounts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                receipt_id TEXT NOT NULL,
+                campaign_id TEXT NOT NULL,
+                campaign_name TEXT NOT NULL,
+                discount_amount REAL NOT NULL,
+                FOREIGN KEY (receipt_id) REFERENCES receipts
+                 (id) ON DELETE CASCADE,
+                FOREIGN KEY (campaign_id) REFERENCES campaigns (id)
+            );
+            """)
+
             conn.commit()
 
 

@@ -1,4 +1,3 @@
-from typing import Any, Dict, List, cast
 import uuid
 from unittest.mock import Mock
 
@@ -6,7 +5,15 @@ import pytest
 from fastapi.testclient import TestClient
 from starlette import status
 
-from core.models.receipt import Currency, Payment, PaymentStatus, Quote, Receipt, ReceiptItem, ReceiptStatus
+from core.models.receipt import (
+    Currency,
+    Payment,
+    PaymentStatus,
+    Quote,
+    Receipt,
+    ReceiptItem,
+    ReceiptStatus,
+)
 from core.services.receipt_service import ReceiptService
 from infra.api.routers.receipt_router import router
 from runner.dependencies import get_receipt_service
@@ -22,13 +29,12 @@ def mock_receipt_service() -> Mock:
 def client(mock_receipt_service: Mock) -> TestClient:
     """Test client with mocked dependencies."""
     from fastapi import FastAPI
+
     app = FastAPI()
     app.include_router(router, prefix="/receipts")
 
     # Override dependency
-    app.dependency_overrides = {
-        get_receipt_service: lambda: mock_receipt_service
-    }
+    app.dependency_overrides = {get_receipt_service: lambda: mock_receipt_service}
 
     return TestClient(app)
 
@@ -50,10 +56,7 @@ def test_create_receipt(client: TestClient, mock_receipt_service: Mock) -> None:
     mock_receipt_service.create_receipt.return_value = mock_receipt
 
     # Act
-    response = client.post(
-        "/receipts/",
-        json={"shift_id": str(shift_id)}
-    )
+    response = client.post("/receipts/", json={"shift_id": str(shift_id)})
 
     # Assert
     assert response.status_code == status.HTTP_201_CREATED
@@ -67,7 +70,9 @@ def test_create_receipt(client: TestClient, mock_receipt_service: Mock) -> None:
     mock_receipt_service.create_receipt.assert_called_once_with(shift_id)
 
 
-def test_create_receipt_shift_not_found(client: TestClient, mock_receipt_service: Mock) -> None:
+def test_create_receipt_shift_not_found(
+    client: TestClient, mock_receipt_service: Mock
+) -> None:
     """Test creating a receipt for a non-existent shift."""
     # Arrange
     shift_id = uuid.uuid4()
@@ -76,10 +81,7 @@ def test_create_receipt_shift_not_found(client: TestClient, mock_receipt_service
     mock_receipt_service.create_receipt.return_value = None
 
     # Act
-    response = client.post(
-        "/receipts/",
-        json={"shift_id": str(shift_id)}
-    )
+    response = client.post("/receipts/", json={"shift_id": str(shift_id)})
 
     # Assert
     assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -118,7 +120,7 @@ def test_add_product_to_receipt(client: TestClient, mock_receipt_service: Mock) 
     # Act
     response = client.post(
         f"/receipts/{receipt_id}/products",
-        json={"product_id": str(product_id), "quantity": quantity}
+        json={"product_id": str(product_id), "quantity": quantity},
     )
 
     # Assert
@@ -134,10 +136,14 @@ def test_add_product_to_receipt(client: TestClient, mock_receipt_service: Mock) 
     assert receipt["products"][0]["quantity"] == quantity
 
     # Check service calls
-    mock_receipt_service.add_product.assert_called_once_with(receipt_id, product_id, quantity)
+    mock_receipt_service.add_product.assert_called_once_with(
+        receipt_id, product_id, quantity
+    )
 
 
-def test_add_product_receipt_not_found(client: TestClient, mock_receipt_service: Mock) -> None:
+def test_add_product_receipt_not_found(
+    client: TestClient, mock_receipt_service: Mock
+) -> None:
     """Test adding a product to a non-existent receipt."""
     # Arrange
     receipt_id = uuid.uuid4()
@@ -150,7 +156,7 @@ def test_add_product_receipt_not_found(client: TestClient, mock_receipt_service:
     # Act
     response = client.post(
         f"/receipts/{receipt_id}/products",
-        json={"product_id": str(product_id), "quantity": quantity}
+        json={"product_id": str(product_id), "quantity": quantity},
     )
 
     # Assert
@@ -159,10 +165,14 @@ def test_add_product_receipt_not_found(client: TestClient, mock_receipt_service:
     assert "detail" in data
 
     # Check service calls
-    mock_receipt_service.add_product.assert_called_once_with(receipt_id, product_id, quantity)
+    mock_receipt_service.add_product.assert_called_once_with(
+        receipt_id, product_id, quantity
+    )
 
 
-def test_calculate_payment_quote(client: TestClient, mock_receipt_service: Mock) -> None:
+def test_calculate_payment_quote(
+    client: TestClient, mock_receipt_service: Mock
+) -> None:
     """Test calculating a payment quote via the API."""
     # Arrange
     receipt_id = uuid.uuid4()
@@ -180,8 +190,7 @@ def test_calculate_payment_quote(client: TestClient, mock_receipt_service: Mock)
 
     # Act
     response = client.post(
-        f"/receipts/receipts/{receipt_id}/quotes",
-        json={"currency": "USD"}
+        f"/receipts/receipts/{receipt_id}/quotes", json={"currency": "USD"}
     )
 
     # Assert
@@ -197,10 +206,14 @@ def test_calculate_payment_quote(client: TestClient, mock_receipt_service: Mock)
     assert quote["total_in_requested_currency"] == 40.0
 
     # Check service calls
-    mock_receipt_service.calculate_payment_quote.assert_called_once_with(receipt_id, Currency.USD)
+    mock_receipt_service.calculate_payment_quote.assert_called_once_with(
+        receipt_id, Currency.USD
+    )
 
 
-def test_calculate_payment_quote_receipt_not_found(client: TestClient, mock_receipt_service: Mock) -> None:
+def test_calculate_payment_quote_receipt_not_found(
+    client: TestClient, mock_receipt_service: Mock
+) -> None:
     """Test calculating a payment quote for a non-existent receipt."""
     # Arrange
     receipt_id = uuid.uuid4()
@@ -210,8 +223,7 @@ def test_calculate_payment_quote_receipt_not_found(client: TestClient, mock_rece
 
     # Act
     response = client.post(
-        f"/receipts/receipts/{receipt_id}/quotes",
-        json={"currency": "USD"}
+        f"/receipts/receipts/{receipt_id}/quotes", json={"currency": "USD"}
     )
 
     # Assert
@@ -221,7 +233,9 @@ def test_calculate_payment_quote_receipt_not_found(client: TestClient, mock_rece
     assert f"Receipt with ID '{receipt_id}'" in data["detail"]
 
     # Check service calls
-    mock_receipt_service.calculate_payment_quote.assert_called_once_with(receipt_id, Currency.USD)
+    mock_receipt_service.calculate_payment_quote.assert_called_once_with(
+        receipt_id, Currency.USD
+    )
 
 
 def test_add_payment(client: TestClient, mock_receipt_service: Mock) -> None:
@@ -249,8 +263,7 @@ def test_add_payment(client: TestClient, mock_receipt_service: Mock) -> None:
 
     # Act
     response = client.post(
-        f"/receipts/{receipt_id}/payments",
-        json={"amount": 100.0, "currency": "GEL"}
+        f"/receipts/{receipt_id}/payments", json={"amount": 100.0, "currency": "GEL"}
     )
 
     # Assert
@@ -272,7 +285,9 @@ def test_add_payment(client: TestClient, mock_receipt_service: Mock) -> None:
     mock_receipt_service.add_payment.assert_called_once_with(receipt_id, 100.0, "GEL")
 
 
-def test_add_payment_receipt_not_found(client: TestClient, mock_receipt_service: Mock) -> None:
+def test_add_payment_receipt_not_found(
+    client: TestClient, mock_receipt_service: Mock
+) -> None:
     """Test adding a payment to a non-existent receipt."""
     # Arrange
     receipt_id = uuid.uuid4()
@@ -282,8 +297,7 @@ def test_add_payment_receipt_not_found(client: TestClient, mock_receipt_service:
 
     # Act
     response = client.post(
-        f"/receipts/{receipt_id}/payments",
-        json={"amount": 100.0, "currency": "GEL"}
+        f"/receipts/{receipt_id}/payments", json={"amount": 100.0, "currency": "GEL"}
     )
 
     # Assert
@@ -296,7 +310,9 @@ def test_add_payment_receipt_not_found(client: TestClient, mock_receipt_service:
     mock_receipt_service.add_payment.assert_called_once_with(receipt_id, 100.0, "GEL")
 
 
-def test_add_payment_invalid_currency(client: TestClient, mock_receipt_service: Mock) -> None:
+def test_add_payment_invalid_currency(
+    client: TestClient, mock_receipt_service: Mock
+) -> None:
     """Test adding a payment with invalid currency."""
     # Arrange
     receipt_id = uuid.uuid4()
@@ -307,7 +323,7 @@ def test_add_payment_invalid_currency(client: TestClient, mock_receipt_service: 
     # Act
     response = client.post(
         f"/receipts/{receipt_id}/payments",
-        json={"amount": 100.0, "currency": "INVALID"}
+        json={"amount": 100.0, "currency": "INVALID"},
     )
 
     # Assert
@@ -317,7 +333,9 @@ def test_add_payment_invalid_currency(client: TestClient, mock_receipt_service: 
     assert "Unsupported currency" in data["detail"]
 
     # Check service calls
-    mock_receipt_service.add_payment.assert_called_once_with(receipt_id, 100.0, "INVALID")
+    mock_receipt_service.add_payment.assert_called_once_with(
+        receipt_id, 100.0, "INVALID"
+    )
 
 
 def test_get_receipt(client: TestClient, mock_receipt_service: Mock) -> None:

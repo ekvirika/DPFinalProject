@@ -2,10 +2,9 @@ from typing import Generator
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker
 
 from infra.api.app import app
+
 
 @pytest.fixture
 def client() -> Generator[TestClient, None, None]:

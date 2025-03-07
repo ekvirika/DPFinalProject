@@ -1,6 +1,7 @@
-from typing import List, Optional
+from typing import List
 from uuid import UUID
 
+from core.models.errors import PaymentUpdateFailedException
 from core.models.receipt import Currency, Payment, PaymentStatus
 from core.models.repositories.payment_repository import PaymentRepository
 from infra.db.database import Database
@@ -47,7 +48,7 @@ class SQLitePaymentRepository(PaymentRepository):
 
         return payment
 
-    def update_status(self, payment_id: UUID, status: str) -> Optional[Payment]:
+    def update_status(self, payment_id: UUID, status: str) -> Payment:
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -62,7 +63,7 @@ class SQLitePaymentRepository(PaymentRepository):
                 row = cursor.fetchone()
 
                 if row:
-                    return Payment(
+                    payment = Payment(
                         id=UUID(row["id"]),
                         receipt_id=row["receipt_id"],
                         payment_amount=row["payment_amount"],
@@ -71,10 +72,11 @@ class SQLitePaymentRepository(PaymentRepository):
                         exchange_rate=row["exchange_rate"],
                         status=PaymentStatus(row["status"]),
                     )
-
-            return None
+                raise PaymentUpdateFailedException(payment_id)
+        return payment
 
     def get_by_receipt(self, receipt_id: UUID) -> List[Payment]:
+        """Retrieve all payments associated with a receipt."""
         with self.db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
@@ -82,15 +84,22 @@ class SQLitePaymentRepository(PaymentRepository):
             )
             rows = cursor.fetchall()
 
-            return [
-                Payment(
-                    id=UUID(row["id"]),
-                    receipt_id=row["receipt_id"],
-                    payment_amount=row["payment_amount"],
-                    currency=Currency(row["currency"]),
-                    total_in_gel=row["total_in_gel"],
-                    exchange_rate=row["exchange_rate"],
-                    status=PaymentStatus(row["status"]),
-                )
-                for row in rows
-            ]
+            payments = []
+            for row in rows:
+                try:
+                    # Ensure all required fields are present and valid
+                    payment = Payment(
+                        id=UUID(row["id"]),
+                        receipt_id=UUID(row["receipt_id"]),
+                        payment_amount=float(row["payment_amount"]),
+                        currency=Currency(row["currency"]),
+                        total_in_gel=float(row["total_in_gel"]),
+                        exchange_rate=float(row["exchange_rate"]),
+                        status=PaymentStatus(row["status"]),
+                    )
+                    payments.append(payment)
+                except (ValueError, KeyError, TypeError) as e:
+                    # Log invalid rows and skip them
+                    print(f"Skipping invalid payment row: {row}. Error: {e}")
+
+            return payments

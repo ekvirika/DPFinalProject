@@ -46,6 +46,7 @@ class ReceiptResponse(BaseModel):
     status: str
     products: List[ReceiptItemResponse] = []
     payments: List[PaymentResponse] = []
+    discounts: List[DiscountResponse] = []
     subtotal: float
     discount_amount: float
     total: float
@@ -89,7 +90,6 @@ class PaymentCompleteResponse(BaseModel):
 
 class ItemSoldResponse(BaseModel):
     product_id: UUID
-    name: str
     quantity: int
 
 

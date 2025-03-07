@@ -69,6 +69,22 @@ class SQLiteReceiptRepository(ReceiptRepository):
                 total=receipt_row["total"],
             )
 
+            # Get receipt-level discounts
+            cursor.execute(
+                "SELECT * FROM receipt_discounts WHERE receipt_id = ?",
+                (str(receipt_id),),
+            )
+            receipt_discount_rows = cursor.fetchall()
+
+            for discount_row in receipt_discount_rows:
+                print(discount_row["campaign_id"])
+                discount = Discount(
+                    campaign_id=UUID(discount_row["campaign_id"]),
+                    campaign_name=discount_row["campaign_name"],
+                    discount_amount=discount_row["discount_amount"],
+                )
+                receipt.discounts.append(discount)
+
             # Get receipt items
             cursor.execute(
                 "SELECT * FROM receipt_items WHERE receipt_id = ?",
@@ -137,26 +153,6 @@ class SQLiteReceiptRepository(ReceiptRepository):
 
     def add_payment(self, receipt_id: UUID, payment: Payment) -> Receipt:
         """Add a payment to a receipt."""
-        with self.db.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                """
-                INSERT INTO payments
-                (id, receipt_id, payment_amount, currency, total_in_gel,
-                 exchange_rate, status)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
-                """,
-                (
-                    str(payment.id),
-                    str(receipt_id),
-                    payment.payment_amount,
-                    payment.currency.value,
-                    payment.total_in_gel,
-                    payment.exchange_rate,
-                    payment.status.value,
-                ),
-            )
-            conn.commit()
 
         return self.get(receipt_id)
 
@@ -171,6 +167,42 @@ class SQLiteReceiptRepository(ReceiptRepository):
             receipt_ids = [row["id"] for row in cursor.fetchall()]
 
         return [self.get(UUID(receipt_id)) for receipt_id in receipt_ids]
+
+    def add_receipt_discount(self, receipt_id: UUID, discount: Discount) -> Receipt:
+        """Add a receipt-level discount."""
+        with self.db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                """
+                INSERT INTO receipt_discounts
+                (receipt_id, campaign_id, campaign_name, discount_amount)
+                VALUES (?, ?, ?, ?)
+                """,
+                (
+                    str(receipt_id),
+                    str(discount.campaign_id),
+                    discount.campaign_name,
+                    discount.discount_amount,
+                ),
+            )
+
+            # Update the receipt's discount_amount and total
+            cursor.execute(
+                """
+                UPDATE receipts 
+                SET discount_amount = discount_amount + ?,
+                    total = subtotal - (discount_amount + ?)
+                WHERE id = ?
+                """,
+                (
+                    discount.discount_amount,
+                    discount.discount_amount,
+                    str(receipt_id),
+                ),
+            )
+            conn.commit()
+
+        return self.get(receipt_id)
 
     def update(self, receipt_id: UUID, updated_receipt: Receipt) -> Receipt:
         with self.db.get_connection() as conn:
@@ -188,6 +220,25 @@ class SQLiteReceiptRepository(ReceiptRepository):
                     str(receipt_id),
                 ),
             )
+
+            # Handle receipt-level discounts
+            cursor.execute(
+                "DELETE FROM receipt_discounts WHERE receipt_id = ?", (str(receipt_id),)
+            )
+
+            if hasattr(updated_receipt, "discounts") and updated_receipt.discounts:
+                for discount in updated_receipt.discounts:
+                    cursor.execute(
+                        """INSERT INTO receipt_discounts
+                           (receipt_id, campaign_id, campaign_name, discount_amount)
+                           VALUES (?, ?, ?, ?)""",
+                        (
+                            str(receipt_id),
+                            str(discount.campaign_id),
+                            discount.campaign_name,
+                            discount.discount_amount,
+                        ),
+                    )
 
             # Handle receipt items - first delete existing items
             cursor.execute(
@@ -272,6 +323,27 @@ class SQLiteReceiptRepository(ReceiptRepository):
             if not receipt_data:
                 raise ValueError(f"Receipt with id {receipt_id} not found after update")
 
+            # Get receipt-level discounts
+            cursor.execute(
+                "SELECT campaign_id, "
+                "campaign_name, discount_amount"
+                " FROM receipt_discounts "
+                "WHERE receipt_id = ?",
+                (str(receipt_id),),
+            )
+            receipt_discount_data = cursor.fetchall()
+
+            # Build receipt-level discounts list
+            receipt_discounts = []
+            for disc in receipt_discount_data:
+                receipt_discounts.append(
+                    Discount(
+                        campaign_id=uuid.UUID(disc[0]),
+                        campaign_name=disc[1],
+                        discount_amount=disc[2],
+                    )
+                )
+
             # Get the items for this receipt
             cursor.execute(
                 "SELECT id, product_id, quantity, unit_price FROM receipt_items"
@@ -348,4 +420,5 @@ class SQLiteReceiptRepository(ReceiptRepository):
                 total=receipt_data[5],
                 products=items,
                 payments=payments if hasattr(updated_receipt, "payments") else [],
+                discounts=receipt_discounts,
             )

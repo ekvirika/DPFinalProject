@@ -1,4 +1,3 @@
-from typing import Any, Dict, List, Optional
 import uuid
 from unittest.mock import Mock
 
@@ -20,13 +19,12 @@ def mock_product_service() -> Mock:
 def client(mock_product_service: Mock) -> TestClient:
     """Test client with mocked dependencies."""
     from fastapi import FastAPI
+
     app = FastAPI()
     app.include_router(router, prefix="/products")
 
     # Override dependency
-    app.dependency_overrides = {
-        get_product_service: lambda: mock_product_service
-    }
+    app.dependency_overrides = {get_product_service: lambda: mock_product_service}
 
     return TestClient(app)
 
@@ -40,19 +38,12 @@ def test_create_product(client: TestClient, mock_product_service: Mock) -> None:
     )
 
     # Act
-    response = client.post(
-        "/products/",
-        json={"name": "Test Product", "price": 10.99}
-    )
+    response = client.post("/products/", json={"name": "Test Product", "price": 10.99})
 
     # Assert
     assert response.status_code == 201
     assert response.json() == {
-        "product": {
-            "id": str(product_id),
-            "name": "Test Product",
-            "price": 10.99
-        }
+        "product": {"id": str(product_id), "name": "Test Product", "price": 10.99}
     }
     mock_product_service.create_product.assert_called_once_with("Test Product", 10.99)
 
@@ -71,16 +62,8 @@ def test_list_products(client: TestClient, mock_product_service: Mock) -> None:
     assert response.status_code == 200
     assert response.json() == {
         "products": [
-            {
-                "id": str(product_1.id),
-                "name": product_1.name,
-                "price": product_1.price
-            },
-            {
-                "id": str(product_2.id),
-                "name": product_2.name,
-                "price": product_2.price
-            }
+            {"id": str(product_1.id), "name": product_1.name, "price": product_1.price},
+            {"id": str(product_2.id), "name": product_2.name, "price": product_2.price},
         ]
     }
     mock_product_service.get_all_products.assert_called_once()
@@ -94,34 +77,26 @@ def test_update_product(client: TestClient, mock_product_service: Mock) -> None:
     mock_product_service.update_product_price.return_value = updated_product
 
     # Act
-    response = client.patch(
-        f"/products/{product_id}",
-        json={"price": 15.99}
-    )
+    response = client.patch(f"/products/{product_id}", json={"price": 15.99})
 
     # Assert
     assert response.status_code == 200
     assert response.json() == {
-        "product": {
-            "id": str(product_id),
-            "name": "Test Product",
-            "price": 15.99
-        }
+        "product": {"id": str(product_id), "name": "Test Product", "price": 15.99}
     }
     mock_product_service.update_product_price.assert_called_once_with(product_id, 15.99)
 
 
-def test_update_product_not_found(client: TestClient, mock_product_service: Mock) -> None:
+def test_update_product_not_found(
+    client: TestClient, mock_product_service: Mock
+) -> None:
     """Test updating a product that doesn't exist."""
     # Arrange
     product_id = uuid.uuid4()
     mock_product_service.update_product_price.return_value = None
 
     # Act
-    response = client.patch(
-        f"/products/{product_id}",
-        json={"price": 15.99}
-    )
+    response = client.patch(f"/products/{product_id}", json={"price": 15.99})
 
     # Assert
     assert response.status_code == 200

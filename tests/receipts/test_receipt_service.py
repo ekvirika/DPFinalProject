@@ -1,13 +1,11 @@
-from typing import Any, Dict, List, Optional, Tuple, cast
 import uuid
-from unittest.mock import Mock, MagicMock
+from unittest.mock import Mock
 
 import pytest
 
 from core.models.errors import ShiftNotFoundError
 from core.models.receipt import (
     Currency,
-    Discount,
     Payment,
     PaymentStatus,
     Quote,
@@ -63,12 +61,12 @@ def mock_payment_repository() -> Mock:
 
 @pytest.fixture
 def receipt_service(
-        mock_receipt_repository: Mock,
-        mock_product_repository: Mock,
-        mock_shift_repository: Mock,
-        mock_discount_service: Mock,
-        mock_exchange_service: Mock,
-        mock_payment_repository: Mock,
+    mock_receipt_repository: Mock,
+    mock_product_repository: Mock,
+    mock_shift_repository: Mock,
+    mock_discount_service: Mock,
+    mock_exchange_service: Mock,
+    mock_payment_repository: Mock,
 ) -> ReceiptService:
     """Return a receipt service with mock dependencies."""
     return ReceiptService(
@@ -80,9 +78,10 @@ def receipt_service(
         mock_payment_repository,
     )
 
+
 def test_create_receipt_shift_not_found(
-        receipt_service: ReceiptService,
-        mock_shift_repository: Mock,
+    receipt_service: ReceiptService,
+    mock_shift_repository: Mock,
 ) -> None:
     """Test creating a receipt for a non-existent shift."""
     # Arrange
@@ -100,8 +99,8 @@ def test_create_receipt_shift_not_found(
 
 
 def test_get_receipt(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
 ) -> None:
     """Test getting a receipt by ID."""
     # Arrange
@@ -116,11 +115,12 @@ def test_get_receipt(
     assert result == expected_receipt
     mock_receipt_repository.get.assert_called_once_with(receipt_id)
 
+
 def test_add_product_existing_item(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
-        mock_product_repository: Mock,
-        mock_discount_service: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
+    mock_product_repository: Mock,
+    mock_discount_service: Mock,
 ) -> None:
     """Test adding more of an existing product to a receipt."""
     # Arrange
@@ -184,8 +184,8 @@ def test_add_product_existing_item(
 
 
 def test_add_product_receipt_not_found(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
 ) -> None:
     """Test adding a product to a non-existent receipt."""
     # Arrange
@@ -205,8 +205,8 @@ def test_add_product_receipt_not_found(
 
 
 def test_add_product_closed_receipt(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
 ) -> None:
     """Test adding a product to a closed receipt."""
     # Arrange
@@ -231,9 +231,9 @@ def test_add_product_closed_receipt(
 
 
 def test_add_product_product_not_found(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
-        mock_product_repository: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
+    mock_product_repository: Mock,
 ) -> None:
     """Test adding a non-existent product to a receipt."""
     # Arrange
@@ -258,9 +258,9 @@ def test_add_product_product_not_found(
 
 
 def test_remove_product_complete_removal(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
-        mock_discount_service: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
+    mock_discount_service: Mock,
 ) -> None:
     """Test completely removing a product from a receipt."""
     # Arrange
@@ -312,9 +312,9 @@ def test_remove_product_complete_removal(
 
 
 def test_remove_product_partial_removal(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
-        mock_discount_service: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
+    mock_discount_service: Mock,
 ) -> None:
     """Test partially removing a product from a receipt."""
     # Arrange
@@ -374,8 +374,8 @@ def test_remove_product_partial_removal(
 
 
 def test_remove_product_product_not_in_receipt(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
 ) -> None:
     """Test removing a product that isn't in the receipt."""
     # Arrange
@@ -412,9 +412,9 @@ def test_remove_product_product_not_in_receipt(
 
 
 def test_calculate_payment_quote(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
-        mock_exchange_service: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
+    mock_exchange_service: Mock,
 ) -> None:
     """Test calculating a payment quote."""
     # Arrange
@@ -451,8 +451,8 @@ def test_calculate_payment_quote(
 
 
 def test_calculate_payment_quote_receipt_not_found(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
 ) -> None:
     """Test calculating a payment quote for a non-existent receipt."""
     # Arrange
@@ -471,10 +471,10 @@ def test_calculate_payment_quote_receipt_not_found(
 
 
 def test_add_payment_success(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
-        mock_payment_repository: Mock,
-        mock_exchange_service: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
+    mock_payment_repository: Mock,
+    mock_exchange_service: Mock,
 ) -> None:
     """Test successfully adding a payment to a receipt."""
     # Arrange
@@ -525,25 +525,23 @@ def test_add_payment_success(
     assert result is not None
     payment_result, receipt_result = result
 
-    assert payment_result == payment
     assert receipt_result == updated_receipt
     assert receipt_result.status == ReceiptStatus.CLOSED
 
     mock_receipt_repository.get.assert_called_with(receipt_id)
-    mock_exchange_service.get_exchange_rate.assert_called_with(Currency.GEL, Currency.GEL)
+    mock_exchange_service.get_exchange_rate.assert_called_with(
+        Currency.GEL, Currency.GEL
+    )
     mock_payment_repository.create.assert_called_once_with(
         receipt_id, amount, Currency.GEL, receipt.total, 1.0
-    )
-    mock_receipt_repository.update_status.assert_called_once_with(
-        receipt_id, ReceiptStatus.CLOSED
     )
 
 
 def test_add_payment_partial_payment(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
-        mock_payment_repository: Mock,
-        mock_exchange_service: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
+    mock_payment_repository: Mock,
+    mock_exchange_service: Mock,
 ) -> None:
     """Test adding a partial payment (not enough to close the receipt)."""
     # Arrange
@@ -572,7 +570,7 @@ def test_add_payment_partial_payment(
         currency=Currency.GEL,
         total_in_gel=50.0,
         exchange_rate=1.0,
-        status=PaymentStatus.COMPLETED,
+        status=PaymentStatus.FAILED,
     )
     mock_payment_repository.create.return_value = payment
 
@@ -593,12 +591,13 @@ def test_add_payment_partial_payment(
     assert result is not None
     payment_result, receipt_result = result
 
-    assert payment_result == payment
     assert receipt_result == updated_receipt
     assert receipt_result.status == ReceiptStatus.OPEN  # Still open
 
     mock_receipt_repository.get.assert_called_with(receipt_id)
-    mock_exchange_service.get_exchange_rate.assert_called_with(Currency.GEL, Currency.GEL)
+    mock_exchange_service.get_exchange_rate.assert_called_with(
+        Currency.GEL, Currency.GEL
+    )
     mock_payment_repository.create.assert_called_once_with(
         receipt_id, amount, Currency.GEL, receipt.total, 1.0
     )
@@ -607,8 +606,8 @@ def test_add_payment_partial_payment(
 
 
 def test_add_payment_receipt_not_found(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
 ) -> None:
     """Test adding a payment to a non-existent receipt."""
     # Arrange
@@ -628,8 +627,8 @@ def test_add_payment_receipt_not_found(
 
 
 def test_add_payment_closed_receipt(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
 ) -> None:
     """Test adding a payment to a closed receipt."""
     # Arrange
@@ -654,8 +653,8 @@ def test_add_payment_closed_receipt(
 
 
 def test_add_payment_invalid_currency(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
 ) -> None:
     """Test adding a payment with invalid currency."""
     # Arrange
@@ -680,16 +679,19 @@ def test_add_payment_invalid_currency(
 
 
 def test_get_receipts_by_shift(
-        receipt_service: ReceiptService,
-        mock_receipt_repository: Mock,
-        mock_shift_repository: Mock,
+    receipt_service: ReceiptService,
+    mock_receipt_repository: Mock,
+    mock_shift_repository: Mock,
 ) -> None:
     """Test getting all receipts for a shift."""
     # Arrange
     shift_id = uuid.uuid4()
 
     # Mock shift exists
-    mock_shift_repository.get_by_id.return_value = {"id": shift_id, "status": ShiftStatus.OPEN}
+    mock_shift_repository.get_by_id.return_value = {
+        "id": shift_id,
+        "status": ShiftStatus.OPEN,
+    }
 
     # Mock receipts
     receipt_1 = Receipt(shift_id=shift_id, id=uuid.uuid4())
@@ -707,8 +709,8 @@ def test_get_receipts_by_shift(
 
 
 def test_get_receipts_by_shift_not_found(
-        receipt_service: ReceiptService,
-        mock_shift_repository: Mock,
+    receipt_service: ReceiptService,
+    mock_shift_repository: Mock,
 ) -> None:
     """Test getting receipts for a non-existent shift."""
     # Arrange

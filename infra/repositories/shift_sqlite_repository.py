@@ -41,7 +41,7 @@ class SQLiteShiftRepository(ShiftRepository):
                 raise ShiftNotFoundError(str(shift_id))
 
             return Shift(
-                id=row["id"],
+                id=UUID(row["id"]),
                 status=ShiftStatus(row["status"]),
                 created_at=datetime.fromisoformat(row["created_at"]),
                 closed_at=datetime.fromisoformat(row["closed_at"])
@@ -62,13 +62,13 @@ class SQLiteShiftRepository(ShiftRepository):
 
             result = self.get_by_id(shift_id)
 
-            current_status = ShiftStatus(result.status)
+            current_status = result.status
             if current_status == status_enum:
                 raise ShiftStatusError()
 
             cursor.execute(
                 "UPDATE shifts SET status = ?, closed_at = ? WHERE id = ?",
-                (status_enum.value, closed_at, str(shift_id)),
+                (status_enum.value, closed_at or datetime.now(), str(shift_id)),
             )
             conn.commit()
 

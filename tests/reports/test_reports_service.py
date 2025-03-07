@@ -1,4 +1,3 @@
-from typing import Any, Optional, cast
 import uuid
 from unittest.mock import Mock
 
@@ -22,7 +21,7 @@ def product_service(mock_product_repository: Mock) -> ProductService:
 
 
 def test_create_product(
-        product_service: ProductService, mock_product_repository: Mock
+    product_service: ProductService, mock_product_repository: Mock
 ) -> None:
     """Test creating a product through the service layer."""
     # Arrange
@@ -39,7 +38,7 @@ def test_create_product(
 
 
 def test_get_product(
-        product_service: ProductService, mock_product_repository: Mock
+    product_service: ProductService, mock_product_repository: Mock
 ) -> None:
     """Test retrieving a product by ID through the service layer."""
     # Arrange
@@ -56,7 +55,7 @@ def test_get_product(
 
 
 def test_get_product_not_found(
-        product_service: ProductService, mock_product_repository: Mock
+    product_service: ProductService, mock_product_repository: Mock
 ) -> None:
     """Test retrieving a non-existent product."""
     # Arrange
@@ -72,7 +71,7 @@ def test_get_product_not_found(
 
 
 def test_get_all_products(
-        product_service: ProductService, mock_product_repository: Mock
+    product_service: ProductService, mock_product_repository: Mock
 ) -> None:
     """Test retrieving all products through the service layer."""
     # Arrange
@@ -90,7 +89,7 @@ def test_get_all_products(
 
 
 def test_update_product_price(
-        product_service: ProductService, mock_product_repository: Mock
+    product_service: ProductService, mock_product_repository: Mock
 ) -> None:
     """Test updating a product's price through the service layer."""
     # Arrange
@@ -107,7 +106,7 @@ def test_update_product_price(
 
 
 def test_update_product_price_not_found(
-        product_service: ProductService, mock_product_repository: Mock
+    product_service: ProductService, mock_product_repository: Mock
 ) -> None:
     """Test updating the price of a non-existent product."""
     # Arrange

@@ -1,11 +1,15 @@
-from typing import Any, Dict, List, Optional, cast
 import uuid
 from unittest.mock import Mock
 
 import pytest
 from fastapi.testclient import TestClient
 
-from core.models.campaign import Campaign, CampaignType, DiscountRule, BuyNGetNRule, ComboRule
+from core.models.campaign import (
+    BuyNGetNRule,
+    Campaign,
+    CampaignType,
+    DiscountRule,
+)
 from core.models.errors import CampaignNotFoundException, InvalidCampaignRulesException
 from core.services.campaign_service import CampaignService
 from infra.api.routers.campaign_router import router
@@ -22,13 +26,12 @@ def mock_campaign_service() -> Mock:
 def client(mock_campaign_service: Mock) -> TestClient:
     """Test client with mocked dependencies."""
     from fastapi import FastAPI
+
     app = FastAPI()
     app.include_router(router, prefix="/campaigns")
 
     # Override dependency
-    app.dependency_overrides = {
-        get_campaign_service: lambda: mock_campaign_service
-    }
+    app.dependency_overrides = {get_campaign_service: lambda: mock_campaign_service}
 
     return TestClient(app)
 
@@ -40,11 +43,7 @@ def test_create_campaign(client: TestClient, mock_campaign_service: Mock) -> Non
     request_data = {
         "name": "Summer Sale",
         "campaign_type": "discount",
-        "rules": {
-            "discount_value": 10.0,
-            "applies_to": "all",
-            "min_amount": 50.0
-        }
+        "rules": {"discount_value": 10.0, "applies_to": "all", "min_amount": 50.0},
     }
 
     # Mock service response
@@ -52,12 +51,8 @@ def test_create_campaign(client: TestClient, mock_campaign_service: Mock) -> Non
         id=campaign_id,
         name="Summer Sale",
         campaign_type=CampaignType.DISCOUNT,
-        rules=DiscountRule(
-            discount_value=10.0,
-            applies_to="all",
-            min_amount=50.0
-        ),
-        is_active=True
+        rules=DiscountRule(discount_value=10.0, applies_to="all", min_amount=50.0),
+        is_active=True,
     )
     mock_campaign_service.create_campaign.return_value = mock_campaign
 
@@ -81,16 +76,12 @@ def test_create_campaign(client: TestClient, mock_campaign_service: Mock) -> Non
     mock_campaign_service.create_campaign.assert_called_once_with(
         "Summer Sale",
         "discount",
-        {
-            "discount_value": 10.0,
-            "applies_to": "all",
-            "min_amount": 50.0
-        }
+        {"discount_value": 10.0, "applies_to": "all", "min_amount": 50.0},
     )
 
 
 def test_create_campaign_with_invalid_rules(
-        client: TestClient, mock_campaign_service: Mock
+    client: TestClient, mock_campaign_service: Mock
 ) -> None:
     """Test creating a campaign with invalid rules via the API."""
     # Arrange
@@ -99,13 +90,14 @@ def test_create_campaign_with_invalid_rules(
         "campaign_type": "discount",
         "rules": {
             "discount_value": -10.0,  # Invalid negative value
-            "applies_to": "all"
-        }
+            "applies_to": "all",
+        },
     }
 
     # Mock service to raise an exception
     mock_campaign_service.create_campaign.side_effect = InvalidCampaignRulesException(
-        "Discount value cannot be negative")
+        "Discount value cannot be negative"
+    )
 
     # Act
     response = client.post("/campaigns/", json=request_data)
@@ -130,11 +122,8 @@ def test_get_campaign(client: TestClient, mock_campaign_service: Mock) -> None:
         id=str(campaign_id),
         name="Test Campaign",
         campaign_type=CampaignType.DISCOUNT,
-        rules=DiscountRule(
-            discount_value=10.0,
-            applies_to="all"
-        ),
-        is_active=True
+        rules=DiscountRule(discount_value=10.0, applies_to="all"),
+        is_active=True,
     )
     mock_campaign_service.get_campaign.return_value = mock_campaign
 
@@ -157,14 +146,17 @@ def test_get_campaign(client: TestClient, mock_campaign_service: Mock) -> None:
     mock_campaign_service.get_campaign.assert_called_once_with(campaign_id)
 
 
-def test_get_campaign_not_found(client: TestClient, mock_campaign_service: Mock) -> None:
+def test_get_campaign_not_found(
+    client: TestClient, mock_campaign_service: Mock
+) -> None:
     """Test getting a non-existent campaign by ID via the API."""
     # Arrange
     campaign_id = uuid.uuid4()
 
     # Mock service to raise an exception
     mock_campaign_service.get_campaign.side_effect = CampaignNotFoundException(
-        campaign_id)
+        str(campaign_id)
+    )
 
     # Act
     response = client.get(f"/campaigns/{campaign_id}")
@@ -186,11 +178,8 @@ def test_list_campaigns(client: TestClient, mock_campaign_service: Mock) -> None
         id=str(uuid.uuid4()),
         name="Campaign 1",
         campaign_type=CampaignType.DISCOUNT,
-        rules=DiscountRule(
-            discount_value=10.0,
-            applies_to="all"
-        ),
-        is_active=True
+        rules=DiscountRule(discount_value=10.0, applies_to="all"),
+        is_active=True,
     )
     campaign_2 = Campaign(
         id=str(uuid.uuid4()),
@@ -200,9 +189,9 @@ def test_list_campaigns(client: TestClient, mock_campaign_service: Mock) -> None
             buy_product_id=str(uuid.uuid4()),
             buy_quantity=2,
             get_product_id=str(uuid.uuid4()),
-            get_quantity=1
+            get_quantity=1,
         ),
-        is_active=True
+        is_active=True,
     )
 
     # Mock service response
@@ -249,14 +238,17 @@ def test_deactivate_campaign(client: TestClient, mock_campaign_service: Mock) ->
     mock_campaign_service.deactivate_campaign.assert_called_once_with(campaign_id)
 
 
-def test_deactivate_campaign_not_found(client: TestClient, mock_campaign_service: Mock) -> None:
+def test_deactivate_campaign_not_found(
+    client: TestClient, mock_campaign_service: Mock
+) -> None:
     """Test deactivating a non-existent campaign via the API."""
     # Arrange
     campaign_id = uuid.uuid4()
 
     # Mock service to raise an exception
     mock_campaign_service.deactivate_campaign.side_effect = CampaignNotFoundException(
-        campaign_id)
+        str(campaign_id)
+    )
 
     # Act
     response = client.delete(f"/campaigns/{campaign_id}")

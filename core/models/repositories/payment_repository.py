@@ -1,4 +1,4 @@
-from typing import List, Optional, Protocol
+from typing import List, Protocol
 from uuid import UUID
 
 from core.models.receipt import Currency, Payment
@@ -14,6 +14,6 @@ class PaymentRepository(Protocol):
         exchange_rate: float,
     ) -> Payment: ...
 
-    def update_status(self, payment_id: UUID, status: str) -> Optional[Payment]: ...
+    def update_status(self, payment_id: UUID, status: str) -> Payment: ...
 
     def get_by_receipt(self, receipt_id: UUID) -> List[Payment]: ...

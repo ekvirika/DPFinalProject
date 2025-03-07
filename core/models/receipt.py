@@ -44,15 +44,29 @@ class ReceiptItem:
         )
 
 
-@dataclass
+@dataclass(frozen=True)
 class Payment:
+    """Represents a payment in the system."""
+
     receipt_id: uuid.UUID
     payment_amount: float
     currency: Currency
     total_in_gel: float
     exchange_rate: float
     status: PaymentStatus = PaymentStatus.PENDING
-    id: uuid.UUID = field(default_factory=lambda: uuid.uuid4())
+    id: uuid.UUID = field(default_factory=uuid.uuid4)
+
+    def update_status(self, new_status: PaymentStatus) -> "Payment":
+        """Create a new Payment object with an updated status."""
+        return Payment(
+            receipt_id=self.receipt_id,
+            payment_amount=self.payment_amount,
+            currency=self.currency,
+            total_in_gel=self.total_in_gel,
+            exchange_rate=self.exchange_rate,
+            status=new_status,
+            id=self.id,
+        )
 
 
 @dataclass
@@ -62,6 +76,7 @@ class Receipt:
     status: ReceiptStatus = ReceiptStatus.OPEN
     products: List[ReceiptItem] = field(default_factory=list)
     payments: List[Payment] = field(default_factory=list)
+    discounts: List[Discount] = field(default_factory=list)
     subtotal: float = 0
     discount_amount: float = 0
     total: float = 0
@@ -70,14 +85,13 @@ class Receipt:
         self.subtotal = sum(item.total_price for item in self.products)
         self.discount_amount = sum(
             sum(d.discount_amount for d in item.discounts) for item in self.products
-        )
+        ) + sum(m.discount_amount for m in self.discounts)
         self.total = self.subtotal - self.discount_amount
 
 
 @dataclass
 class ItemSold:
     product_id: uuid.UUID
-    name: str
     quantity: int
 
 

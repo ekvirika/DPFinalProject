@@ -5,21 +5,29 @@ from fastapi import APIRouter, Depends
 
 from core.models.report import SalesReport, ShiftReport
 from core.services.report_service import ReportService
-from core.services.shift_service import ShiftService
 from infra.api.schemas.report import SalesReportResponse, XReportResponse
-from runner.dependencies import get_report_service, get_shift_service
+from runner.dependencies import get_report_service
 
 router = APIRouter()
 
 
-@router.get("/x-reports", response_model=Dict[str, XReportResponse])
+@router.get("/x-reports")
 def get_x_report(
     shift_id: UUID,
     report_service: ReportService = Depends(get_report_service),
-    shift_service: ShiftService = Depends(get_shift_service),
 ) -> dict[str, ShiftReport]:
-    report = report_service.generate_x_report(shift_id, shift_service)
+    report = report_service.generate_shift_report(shift_id)
+    print(report)
     return {"x-report": report}
+
+
+@router.patch("/z-report/{shift_id}", response_model=Dict[str, XReportResponse])
+def get_z_report(
+    shift_id: UUID,
+    report_service: ReportService = Depends(get_report_service),
+) -> dict[str, ShiftReport]:
+    report = report_service.generate_z_report(shift_id)
+    return {"z_report": report}
 
 
 @router.get("/sales", response_model=Dict[str, SalesReportResponse])

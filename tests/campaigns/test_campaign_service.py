@@ -1,10 +1,14 @@
-from typing import Any, Dict, List, Optional, cast
 import uuid
 from unittest.mock import Mock
 
 import pytest
 
-from core.models.campaign import Campaign, CampaignType, DiscountRule, BuyNGetNRule, ComboRule
+from core.models.campaign import (
+    BuyNGetNRule,
+    Campaign,
+    CampaignType,
+    DiscountRule,
+)
 from core.models.repositories.campaign_repository import CampaignRepository
 from core.models.repositories.product_repository import ProductRepository
 from core.services.campaign_service import CampaignService
@@ -24,14 +28,14 @@ def mock_product_repository() -> Mock:
 
 @pytest.fixture
 def campaign_service(
-        mock_campaign_repository: Mock, mock_product_repository: Mock
+    mock_campaign_repository: Mock, mock_product_repository: Mock
 ) -> CampaignService:
     """Return a campaign service with mock repositories."""
     return CampaignService(mock_campaign_repository, mock_product_repository)
 
 
 def test_create_campaign(
-        campaign_service: CampaignService, mock_campaign_repository: Mock
+    campaign_service: CampaignService, mock_campaign_repository: Mock
 ) -> None:
     """Test creating a campaign through the service layer."""
     # Arrange
@@ -48,8 +52,8 @@ def test_create_campaign(
         id=str(uuid.uuid4()),
         name=name,
         campaign_type=CampaignType.DISCOUNT,
-        rules=DiscountRule(**rules),
-        is_active=True
+        rules=DiscountRule(discount_value=10.0, applies_to="all", min_amount=50.0),
+        is_active=True,
     )
     mock_campaign_repository.create.return_value = expected_campaign
 
@@ -62,7 +66,7 @@ def test_create_campaign(
 
 
 def test_get_campaign(
-        campaign_service: CampaignService, mock_campaign_repository: Mock
+    campaign_service: CampaignService, mock_campaign_repository: Mock
 ) -> None:
     """Test getting a campaign by ID through the service layer."""
     # Arrange
@@ -72,7 +76,7 @@ def test_get_campaign(
         name="Test Campaign",
         campaign_type=CampaignType.DISCOUNT,
         rules=DiscountRule(discount_value=10.0, applies_to="all"),
-        is_active=True
+        is_active=True,
     )
     mock_campaign_repository.get_by_id.return_value = expected_campaign
 
@@ -85,7 +89,7 @@ def test_get_campaign(
 
 
 def test_get_all_campaigns(
-        campaign_service: CampaignService, mock_campaign_repository: Mock
+    campaign_service: CampaignService, mock_campaign_repository: Mock
 ) -> None:
     """Test getting all campaigns through the service layer."""
     # Arrange
@@ -94,7 +98,7 @@ def test_get_all_campaigns(
         name="Campaign 1",
         campaign_type=CampaignType.DISCOUNT,
         rules=DiscountRule(discount_value=10.0, applies_to="all"),
-        is_active=True
+        is_active=True,
     )
     campaign_2 = Campaign(
         id=str(uuid.uuid4()),
@@ -104,9 +108,9 @@ def test_get_all_campaigns(
             buy_product_id=str(uuid.uuid4()),
             buy_quantity=2,
             get_product_id=str(uuid.uuid4()),
-            get_quantity=1
+            get_quantity=1,
         ),
-        is_active=True
+        is_active=True,
     )
     expected_campaigns = [campaign_1, campaign_2]
     mock_campaign_repository.get_all.return_value = expected_campaigns
@@ -120,7 +124,7 @@ def test_get_all_campaigns(
 
 
 def test_deactivate_campaign(
-        campaign_service: CampaignService, mock_campaign_repository: Mock
+    campaign_service: CampaignService, mock_campaign_repository: Mock
 ) -> None:
     """Test deactivating a campaign through the service layer."""
     # Arrange

@@ -1,5 +1,5 @@
 import logging
-from typing import cast
+from typing import Dict, List, cast
 from uuid import UUID
 
 from core.models.campaign import (
@@ -39,6 +39,11 @@ class DiscountService:
         for item in receipt.products:
             item.discounts = []
 
+        # Store potential discounts for each item to later select the best one
+        potential_discounts: Dict[UUID, List[Discount]] = {
+            item.product_id: [] for item in receipt.products
+        }
+
         # Apply each campaign type
         for campaign in active_campaigns:
             logging.info(
@@ -52,17 +57,36 @@ class DiscountService:
 
             if campaign.campaign_type == CampaignType.DISCOUNT:
                 logging.info("Applying discount rule...")
-                self._apply_discount_rule(receipt, campaign)
+                self._apply_discount_rule(receipt, campaign, potential_discounts)
                 logging.info("Discount rule applied")
             elif campaign.campaign_type == CampaignType.BUY_N_GET_N:
-                self._apply_buy_n_get_n_rule(receipt, campaign)
+                self._apply_buy_n_get_n_rule(receipt, campaign, potential_discounts)
             elif campaign.campaign_type == CampaignType.COMBO:
-                self._apply_combo_rule(receipt, campaign)
+                self._apply_combo_rule(receipt, campaign, potential_discounts)
 
+        # For each item, apply only the discount with the largest amount
+        for item in receipt.products:
+            if (
+                item.product_id in potential_discounts
+                and potential_discounts[item.product_id]
+            ):
+                best_discount = max(
+                    potential_discounts[item.product_id],
+                    key=lambda d: d.discount_amount,
+                )
+                item.discounts = [best_discount]
+                logging.info(
+                    f"Applied best discount of "
+                    f"{best_discount.discount_amount} to"
+                    f" product {item.product_id} "
+                    f"from campaign {best_discount.campaign_name}"
+                )
+
+        # Calculate total discount and update receipt
         total_discount = sum(
             sum(discount.discount_amount for discount in item.discounts)
             for item in receipt.products
-        )
+        ) + sum(d.discount_amount for d in receipt.discounts)
 
         # Update receipt's discount_amount and total fields
         receipt.discount_amount = total_discount
@@ -73,8 +97,13 @@ class DiscountService:
 
         return receipt
 
-    def _apply_discount_rule(self, receipt: Receipt, campaign: Campaign) -> None:
-        """Apply discount rule to the receipt."""
+    def _apply_discount_rule(
+        self,
+        receipt: Receipt,
+        campaign: Campaign,
+        potential_discounts: Dict[UUID, List[Discount]],
+    ) -> None:
+        """Apply discount rule to the receipt and store in potential discounts."""
         logging.debug(f"Inside _apply_discount_rule for campaign: {campaign.name}")
 
         # Ensure we're working with a DiscountRule by using type cast
@@ -99,26 +128,9 @@ class DiscountService:
             logging.debug(f"Total discount calculated: {discount_amount}")
 
             # Distribute discount proportionally across all items
-            total_receipt_value = sum(item.total_price for item in receipt.products)
-
-            if total_receipt_value > 0:
-                for item in receipt.products:
-                    # Calculate this item's share of the discount
-                    item_ratio = item.total_price / total_receipt_value
-                    item_discount = discount_amount * item_ratio
-
-                    # Add discount to the item
-                    item.discounts.append(
-                        Discount(
-                            campaign_id=UUID(campaign.id),
-                            campaign_name=campaign.name,
-                            discount_amount=item_discount,
-                        )
-                    )
-                    logging.info(
-                        f"Added discount of {item_discount} to item with"
-                        f" product ID {item.product_id}"
-                    )
+            receipt.discounts.append(
+                Discount(UUID(campaign.id), campaign.name, discount_amount)
+            )
 
         elif rule.applies_to == "product":
             logging.info(
@@ -130,15 +142,21 @@ class DiscountService:
                     logging.info(f"Applying product discount to {item.product_id}")
                     discount_amount = item.total_price * (rule.discount_value / 100)
 
-                    item.discounts.append(
-                        Discount(
-                            campaign_id=UUID(campaign.id),
-                            campaign_name=campaign.name,
-                            discount_amount=discount_amount,
-                        )
+                    discount = Discount(
+                        campaign_id=UUID(campaign.id),
+                        campaign_name=campaign.name,
+                        discount_amount=discount_amount,
                     )
 
-    def _apply_buy_n_get_n_rule(self, receipt: Receipt, campaign: Campaign) -> None:
+                    # Add to potential discounts
+                    potential_discounts[item.product_id].append(discount)
+
+    def _apply_buy_n_get_n_rule(
+        self,
+        receipt: Receipt,
+        campaign: Campaign,
+        potential_discounts: Dict[UUID, List[Discount]],
+    ) -> None:
         """Apply a Buy N Get N rule to the receipt."""
         # Type check to ensure we're using the correct rule type
         if campaign.campaign_type != CampaignType.BUY_N_GET_N:
@@ -199,35 +217,31 @@ class DiscountService:
             )
             receipt.products.append(get_item)
 
-        # Apply the discount for the free items
+            # Initialize potential discounts for this new item
+            potential_discounts[get_item.product_id] = []
+
+        # Calculate discount for the free items
         discount_amount = get_item.unit_price * free_quantity
-        get_item.discounts.append(
-            Discount(
-                campaign_id=UUID(campaign.id),
-                campaign_name=campaign.name,
-                discount_amount=round(discount_amount, 2),
-            )
+        discount = Discount(
+            campaign_id=UUID(campaign.id),
+            campaign_name=campaign.name,
+            discount_amount=round(discount_amount, 2),
         )
 
-        # Adjust the final price of the free item to reflect the discount
-        get_item.final_price = get_item.total_price - discount_amount
+        # Add to potential discounts
+        potential_discounts[get_item.product_id].append(discount)
 
         # Update receipt totals correctly
         receipt.subtotal = sum(
             item.total_price for item in receipt.products
         )  # Include all products
-        receipt.discount_amount = sum(
-            sum(discount.discount_amount for discount in item.discounts)
-            for item in receipt.products
-        )
-        receipt.total = receipt.subtotal - receipt.discount_amount
 
-        logging.info(
-            f"Updated receipt: subtotal={receipt.subtotal}, "
-            f"discount={receipt.discount_amount}, total={receipt.total}"
-        )
-
-    def _apply_combo_rule(self, receipt: Receipt, campaign: Campaign) -> None:
+    def _apply_combo_rule(
+        self,
+        receipt: Receipt,
+        campaign: Campaign,
+        potential_discounts: Dict[UUID, List[Discount]],
+    ) -> None:
         """Apply a combo rule to the receipt."""
         # Type check to ensure we're using the correct rule type
         if campaign.campaign_type != CampaignType.COMBO:
@@ -255,15 +269,17 @@ class DiscountService:
             if rule.discount_type == "percentage":
                 for item in combo_items:
                     discount_amount = item.total_price * (rule.discount_value / 100)
-                    item.discounts.append(
-                        Discount(
-                            campaign_id=UUID(campaign.id),
-                            campaign_name=campaign.name,
-                            discount_amount=round(discount_amount, 2),
-                        )
+                    discount = Discount(
+                        campaign_id=UUID(campaign.id),
+                        campaign_name=campaign.name,
+                        discount_amount=round(discount_amount, 2),
                     )
+
+                    # Add to potential discounts
+                    potential_discounts[item.product_id].append(discount)
                     logging.info(
-                        f"Applied {rule.discount_value}% discount to {item.product_id}"
+                        f"Added potential {rule.discount_value}%"
+                        f" discount to {item.product_id}"
                     )
 
             elif rule.discount_type == "fixed":
@@ -272,14 +288,15 @@ class DiscountService:
                     item_discount = (
                         item.total_price / combo_total
                     ) * rule.discount_value
-                    item.discounts.append(
-                        Discount(
-                            campaign_id=UUID(campaign.id),
-                            campaign_name=campaign.name,
-                            discount_amount=round(item_discount, 2),
-                        )
+                    discount = Discount(
+                        campaign_id=UUID(campaign.id),
+                        campaign_name=campaign.name,
+                        discount_amount=round(item_discount, 2),
                     )
+
+                    # Add to potential discounts
+                    potential_discounts[item.product_id].append(discount)
                     logging.info(
-                        f"Applied fixed discount of {item_discount}"
+                        f"Added potential fixed discount of {item_discount}"
                         f" to {item.product_id}"
                     )

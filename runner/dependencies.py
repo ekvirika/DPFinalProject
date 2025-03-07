@@ -63,8 +63,8 @@ def get_app_container(db_path: str) -> AppContainer:
     shift_repository = SQLiteShiftRepository(database)
     payment_repository = SQLitePaymentRepository(database)
     report_repository = SQLiteReportRepository(
-        database, receipt_repository
-    )  # Added receipt_repository argument
+        database, receipt_repository, shift_repository
+    )
 
     # Initialize services
     exchange_service = ExchangeRateService()  # Removed receipt_repository argument
@@ -92,7 +92,7 @@ def get_app_container(db_path: str) -> AppContainer:
         payment_repository,
     )
 
-    report_service = ReportService(report_repository, shift_repository)
+    report_service = ReportService(report_repository)
 
     return AppContainer(
         db=database,

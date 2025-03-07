@@ -1,3 +1,5 @@
+from uuid import UUID
+
 from fastapi import HTTPException, status
 
 
@@ -148,4 +150,22 @@ class ShiftReportDoesntExistError(POSException):
             detail=f"This shift with id <{shift_id}> doesnt have receipts",
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             error_code="INVALID_STATUS",
+        )
+
+
+class PaymentNotFoundException(HTTPException):
+    """Exception raised when a payment is not found."""
+
+    def __init__(self, payment_id: UUID):
+        detail = f"Payment with ID {payment_id} not found."
+        super().__init__(status_code=status.HTTP_404_NOT_FOUND, detail=detail)
+
+
+class PaymentUpdateFailedException(HTTPException):
+    """Exception raised when updating a payment fails."""
+
+    def __init__(self, payment_id: UUID):
+        detail = f"Failed to update payment with ID {payment_id}."
+        super().__init__(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=detail
         )

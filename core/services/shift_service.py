@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from uuid import UUID
 
 from core.models.repositories.shift_repository import ShiftRepository
@@ -14,11 +15,11 @@ class ShiftService:
         """Open a new shift."""
         return self.shift_repository.create()
 
-    def close_shift(self, shift_id: UUID, shift_update: ShiftUpdate) -> Shift:
-        """Close an open shift."""
-        now = datetime.now()
-        return self.shift_repository.update_status(shift_id, shift_update, now)
-
     def get_shift(self, shift_id: UUID) -> Shift:
         """Get a shift by ID."""
         return self.shift_repository.get_by_id(shift_id)
+
+    def update_shift_status(
+        self, shift_id: UUID, status: ShiftUpdate, closed_at: Optional[datetime] = None
+    ) -> Shift:
+        return self.shift_repository.update_status(shift_id, status, closed_at)
